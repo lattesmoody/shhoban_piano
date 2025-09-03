@@ -138,8 +138,18 @@
     - 개선 필요 내용 : 고유번호는 휴대폰 8자리 + 예비숫자 1자리 => 숫자 8 ~ 9자리로 관리
     - 개선 필요 사유 : 휴대폰 뒷자리가 같은 사람인 경우?
 ## 7. 신규 프로그램 초기 설정
+### 7-1. [개인PC 개발환경구축]
+    - visual studio code 설치
+      - 버전: 1.100.3
+      - 설치 사이트: https://code.visualstudio.com/docs/?dv=win64user
+    - node.js 설치 
+      - 버전: 22.19.0 (LTS)
+      - 설치 사이트: https://nodejs.org/dist/v22.19.0/node-v22.19.0-x64.msi
 
 
+## 99. 프로그램 개발 간 오류 기록
+### 99-1. vercel 첫 배포
+    - 
 
 --
 ## 000. sample
