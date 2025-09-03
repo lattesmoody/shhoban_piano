@@ -25,8 +25,15 @@ export default function HomePage() {
             const days = ['일', '월', '화', '수', '목', '금', '토'];
             // - 현재 요일 계산
             const dayName = days[now.getDay()];
-            // - 시간 포맷팅: "YYYY - MM - DD (요일) HH : MM" 형식으로 변환
-            const formattedTime = `${now.getFullYear()} - ${String(now.getMonth() + 1).padStart(2, '0')} - ${String(now.getDate()).padStart(2, '0')} (${dayName}) ${String(now.getHours()).padStart(2, '0')} : ${String(now.getMinutes()).padStart(2, '0')}`;
+            
+            // - 12시간제 시간 계산
+            let hours = now.getHours();
+            const ampm = hours >= 12 ? '오후' : '오전';
+            hours = hours % 12;
+            hours = hours ? hours : 12; // 0시는 12시로 표시
+
+            // - 시간 포맷팅: "YYYY - MM - DD (요일) 오전/오후 HH : MM" 형식으로 변환
+            const formattedTime = `${now.getFullYear()} - ${String(now.getMonth() + 1).padStart(2, '0')} - ${String(now.getDate()).padStart(2, '0')} (${dayName}) ${ampm} ${String(hours).padStart(2, '0')} : ${String(now.getMinutes()).padStart(2, '0')}`;
             // - 상태 업데이트: 포맷팅된 시간으로 currentTime 상태 변경
             setCurrentTime(formattedTime);
         }, 1000);
