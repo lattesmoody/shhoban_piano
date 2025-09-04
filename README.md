@@ -518,14 +518,17 @@ https://shhobanpiano.vercel.app/
     - 소스파일명  : process_situation_reset.php
 
 ### 5-3. Login
+![로그인페이지](_handover/original/25-member_login-로그인페이지.png)
 ---
     - 화면 설명   : "로그인 페이지"
     - 역    할1   : "아이디" 입력
     - 역    할2   : "비밀번호" 입력 
     - 역    할3   : "로그인" 버튼
                     (process_login.php)
+    - 참고 사항1  : "아이디나 비밀번호가 틀립니다."
+    - 참고 사항2  : "로그인되었습니다."
     - 상위 코드   : hb_02_main
-    - 화면 코드   : 작성필요
+    - 화면 코드   : hb_25_member_login
     - 소스파일명  : member_login.php
   
 ### 5-4. mypage
