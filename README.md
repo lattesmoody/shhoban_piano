@@ -559,6 +559,9 @@ https://shhobanpiano.vercel.app/
       - 설치 사이트: https://nodejs.org/dist/v22.19.0/node-v22.19.0-x64.msi
     - npm install 진행 (vscode 터미널에서)
     - npm run dev 명령어 인식 여부 확인.
+    - Neon serverless driver 설치 
+      - npm install @neondatabase/serverless
+    - 
 
 ## 7. 사용 라이브러리 및 라이선스 확인
 ### 7-1. "라이브러리 이름"
