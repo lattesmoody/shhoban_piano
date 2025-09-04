@@ -18,8 +18,17 @@
       - npm install @neondatabase/serverless
   
     - bcrypt 설치 (`2025.09.04)
+      - 사용 목적: 비밀번호 암호화
       - npm install bcrypt
       - npm install --save-dev @types/bcrypt
+    
+    - dotenv 설치 (`2025.09.04)
+      - 사용 목적: -
+      - npm install dotenv
+    - zod 설치 (`2025.09.04)
+      - 사용 목적: 데이터 유효성 검사
+      - npm install zod 
+
 
 ### 1-2. [프로그램 기술 선정]
     - 프레임워크 : next.js 
