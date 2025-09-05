@@ -12,7 +12,7 @@ const SignupFormSchema = z.object({
   id: z.string().min(4, { message: '아이디는 최소 4자 이상이어야 합니다.' }),
   password: z.string().min(4, { message: '비밀번호는 최소 4자 이상이어야 합니다.' }),
   name: z.string().min(1, { message: '이름을 입력해주세요.' }),
-  usergubun: z.string().regex(/^[0-9]+$/, { message: '강사 구분은 숫자만 입력 가능합니다.' }),
+  user_gubun: z.string().regex(/^[0-9]+$/, { message: '강사 구분은 숫자만 입력 가능합니다.' }),
 });
 
 /**
@@ -35,7 +35,7 @@ export async function registerUser(
     return validatedFields.error.issues.map((e) => e.message).join(', ');
   }
   
-  const { id, password, name, usergubun } = validatedFields.data;
+  const { id, password, name, user_gubun } = validatedFields.data;
 
   try {
     const sql = neon(process.env.DATABASE_URL!);
@@ -45,8 +45,8 @@ export async function registerUser(
     
     // 3. 데이터베이스에 사용자 정보를 삽입합니다.
     await sql`
-      INSERT INTO users (id, name, usergubun, password_hash) 
-      VALUES (${Number(id)}, ${name}, ${Number(usergubun)}, ${hashedPassword})
+      INSERT INTO users (id, name, user_gubun, password_hash) 
+      VALUES (${Number(id)}, ${name}, ${Number(user_gubun)}, ${hashedPassword})
     `;
 
     console.log(`새로운 사용자가 생성되었습니다. ID: ${id}`);

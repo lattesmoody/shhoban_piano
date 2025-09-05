@@ -7,9 +7,10 @@ import { useFormState, useFormStatus } from 'react-dom';
 import { registerUser } from '@/app/lib/process_member_create_form/actions'; // 회원가입을 처리할 서버 액션을 가져옴.
 
 /**
- * 회원가입 폼과 UI를 담당하는 컴포넌트
+ * 함수 이름: MemberCreateFormPage
+ * 함수 역할: 회원가입(강사추가) 폼과 UI를 담당하는 컴포넌트
  */
-export default function SignupPage() {
+export default function MemberCreateFormPage() {
   // registerUser 서버 액션의 결과(에러 메시지 등)를 상태로 관리.
   const [errorMessage, dispatch] = useActionState(registerUser, undefined);
 
@@ -22,16 +23,16 @@ export default function SignupPage() {
         <form action={dispatch} className="space-y-4">
           <div>
             <label
-              htmlFor="id"
+              htmlFor="member_id"
               className="block text-sm font-medium text-gray-700"
             >
               아이디
             </label>
             <input
-              id="id"
+              id="member_id"
               type="text" // 숫자만 입력 받도록 pattern 속성 추가
               // pattern="[0-9]*"
-              name="id"
+              name="member_id"
               placeholder="아이디 입력"
               required
               className="w-full px-3 py-2 mt-1 transition duration-150 ease-in-out border border-gray-300 rounded-md shadow-sm appearance-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -39,15 +40,15 @@ export default function SignupPage() {
           </div>
           <div>
             <label
-              htmlFor="password"
+              htmlFor="member_pw"
               className="block text-sm font-medium text-gray-700"
             >
               비밀번호
             </label>
             <input
-              id="password"
+              id="member_pw"
               type="password"
-              name="password"
+              name="member_pw"
               placeholder="비밀번호"
               required
               minLength={4}
@@ -57,15 +58,15 @@ export default function SignupPage() {
           {/* 이름 필드 추가 */}
           <div>
             <label
-              htmlFor="name"
+              htmlFor="member_name"
               className="block text-sm font-medium text-gray-700"
             >
               이름
             </label>
             <input
-              id="name"
+              id="member_name"
               type="text"
-              name="name"
+              name="member_name"
               placeholder="이름을 입력하세요"
               required
               className="w-full px-3 py-2 mt-1 transition duration-150 ease-in-out border border-gray-300 rounded-md shadow-sm appearance-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -74,16 +75,16 @@ export default function SignupPage() {
           {/* 강사구분 필드 추가 */}
           <div>
             <label
-              htmlFor="usergubun"
+              htmlFor="member_code"
               className="block text-sm font-medium text-gray-700"
             >
               강사 구분
             </label>
             <input
-              id="usergubun"
+              id="member_code"
               type="text"
               pattern="[0-9]*"
-              name="usergubun"
+              name="member_code"
               placeholder="구분 번호 (예: 1,2,3)"
               required
               className="w-full px-3 py-2 mt-1 transition duration-150 ease-in-out border border-gray-300 rounded-md shadow-sm appearance-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -91,7 +92,7 @@ export default function SignupPage() {
           </div>
 
           {/* 회원가입 버튼 (로딩 상태 표시 기능 포함) */}
-          <SignupButton />
+          <MemberCreateButton />
 
           {/* 서버 액션 실패 시 에러 메시지 표시 */}
           {errorMessage && (
@@ -112,7 +113,7 @@ export default function SignupPage() {
 /**
  * 폼 제출 상태에 따라 로딩 상태를 표시하는 버튼 컴포넌트
  */
-function SignupButton() {
+function MemberCreateButton() {
   const { pending } = useFormStatus();
 
   return (
