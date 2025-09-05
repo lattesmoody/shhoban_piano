@@ -3,7 +3,7 @@
 'use client'; // useFormState, useFormStatus 훅을 사용하려면 클라이언트 컴포넌트여야 한다.
 
 import { useActionState } from 'react'; 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useFormStatus } from 'react-dom';
 import { registerUser } from '@/app/lib/process_member_create_form/actions'; // 회원가입을 처리할 서버 액션을 가져옴.
 
 /**
@@ -17,7 +17,7 @@ export default function MemberCreateFormPage() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
-        <h1 className="text-3xl font-bold text-center text-gray-900">회원가입</h1>
+        <h1 className="text-3xl font-bold text-center text-gray-900">강사추가</h1>
         
         {/* form의 action에 서버 액션 함수를 연결. */}
         <form action={dispatch} className="space-y-4">
@@ -30,8 +30,8 @@ export default function MemberCreateFormPage() {
             </label>
             <input
               id="member_id"
-              type="text" // 숫자만 입력 받도록 pattern 속성 추가
-              // pattern="[0-9]*"
+              type="text" 
+              // pattern="[0-9]*" // 숫자만 입력 받도록 pattern 속성 추가
               name="member_id"
               placeholder="아이디 입력"
               required
@@ -91,7 +91,7 @@ export default function MemberCreateFormPage() {
             />
           </div>
 
-          {/* 회원가입 버튼 (로딩 상태 표시 기능 포함) */}
+          {/* 강사추가 버튼 (로딩 상태 표시 기능 포함) */}
           <MemberCreateButton />
 
           {/* 서버 액션 실패 시 에러 메시지 표시 */}
