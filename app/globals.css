@@ -4,9 +4,20 @@
 @tailwind components;
 @tailwind utilities;
 
-
+/* 
 body {
 background-color: #f0f2f5;
+} */
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #FDFDFD; 
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-
+/* 2025.09.09 */
+* {
+  box-sizing: border-box;
+}
