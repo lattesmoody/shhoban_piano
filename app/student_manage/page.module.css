@@ -1,0 +1,126 @@
+/* 전반적인 레이아웃 */
+.container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  font-family: 'Pretendard', sans-serif;
+}
+
+/* 헤더 스타일 */
+.header {
+  background-color: #16a085; /* 이미지의 청록색 */
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+}
+
+.title {
+  color: white;
+  text-align: center;
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+/* '수강생 추가' 버튼 영역 */
+.actionBar {
+  margin-bottom: 1.5rem;
+}
+
+/* 반응형 테이블 컨테이너 */
+.tableContainer {
+  width: 100%;
+  overflow-x: auto; /* 핵심: 화면이 좁아지면 가로 스크롤 생성 */
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+}
+
+/* 테이블 기본 스타일 */
+.studentTable {
+  width: 100%;
+  min-width: 800px; /* 모바일에서 스크롤이 생기는 최소 너비 */
+  border-collapse: collapse;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.studentTable th,
+.studentTable td {
+  padding: 0.9rem 0.5rem;
+  border-bottom: 1px solid #dee2e6;
+  white-space: nowrap; /* 셀 내용이 줄바꿈되지 않도록 설정 */
+}
+
+/* 테이블 헤더 */
+.tableHeader {
+  background-color: #f8f9fa;
+  color: #495057;
+  font-weight: 600;
+}
+
+/* 테이블 본문 행 */
+.studentTable tbody tr:hover {
+  background-color: #f1f3f5; /* 마우스 호버 시 배경색 변경 (UX 개선) */
+}
+
+.studentTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* 기능(Action) 버튼 셀 */
+.actionCell {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* 공용 버튼 스타일 */
+.primaryButton, .actionButton {
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.primaryButton {
+  background-color: #16a085;
+}
+
+.primaryButton:hover {
+  background-color: #1abc9c;
+}
+
+/* 테이블 내 기능 버튼 */
+.actionButton {
+  background-color: #27ae60;
+  font-size: 0.8rem;
+  padding: 0.4rem 0.8rem;
+}
+
+.actionButton:hover {
+  background-color: #2ecc71;
+}
+
+/* 삭제 버튼은 색상으로 구분 (UX 개선) */
+.deleteButton {
+  background-color: #c0392b;
+}
+
+.deleteButton:hover {
+  background-color: #e74c3c;
+}
+
+/* 스크린 리더 사용자만 인식할 수 있는 숨김 클래스 (접근성) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
