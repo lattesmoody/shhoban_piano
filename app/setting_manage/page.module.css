@@ -1,0 +1,64 @@
+.container {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2.5rem;
+  padding: 0.5rem 0;
+  color: #495057;
+}
+
+.welcomeMessage {
+  font-weight: 500;
+}
+
+.nav a {
+  margin-left: 1.5rem;
+  text-decoration: none;
+  color: #343a40;
+  font-weight: 600;
+  transition: color 0.2s ease-in-out;
+}
+
+.nav a:hover {
+  color: #000;
+}
+
+.mainContent {
+  width: 100%;
+}
+
+.menuGrid {
+  display: grid;
+  gap: 1rem;
+}
+
+.menuButton {
+  display: block;
+  width: 100%;
+  padding: 1.25rem;
+  background-color: #F9886C; /* 이미지와 유사한 코랄 색상 */
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+}
+
+.menuButton:hover {
+  background-color: #F87251; /* 호버 시 약간 더 진한 색상 */
+}
+
+.menuButton:active {
+  transform: scale(0.99); /* 클릭 시 미세한 축소 효과 */
+}

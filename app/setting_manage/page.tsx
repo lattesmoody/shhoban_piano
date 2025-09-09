@@ -1,0 +1,43 @@
+import styles from './page.module.css';
+
+
+// 관리 메뉴 항목 배열
+const adminMenuItems = [
+  '수강생 관리',
+  '강사 관리',
+  '연습실 관리',
+  '드럼실 관리',
+  '유치부실 관리',
+  '수강생 출석 확인',
+  '과정별 수업 시간 설정',
+  '일일 수강 현황 초기화',
+];
+
+export default function AdminDashboard() {
+  return (
+    <div className={styles.container}>
+      {/* 상단 헤더 */}
+      <header className={styles.header}>
+        <div className={styles.welcomeMessage}>
+          <span>관리자 님, 환영합니다 :)</span>
+        </div>
+        <nav className={styles.nav}>
+          <a href="#">Main</a>
+          <a href="#">Manage</a>
+          <a href="#">Logout</a>
+        </nav>
+      </header>
+
+      {/* 메인 컨텐츠 (메뉴 버튼) */}
+      <main className={styles.mainContent}>
+        <div className={styles.menuGrid}>
+          {adminMenuItems.map((item, index) => (
+            <button key={index} className={styles.menuButton}>
+              {item}
+            </button>
+          ))}
+        </div>
+      </main>
+    </div>
+  );
+}
