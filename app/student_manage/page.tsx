@@ -3,26 +3,27 @@
 import React, { useState, useEffect } from 'react';
 import styles from './page.module.css';
 import Link from 'next/link';
-// - 중앙 관리 데이터 파일(`@/lib/data`)에서 학생 데이터와 타입 import
-import { mockStudentData, Student } from '@/app/lib/data';
+// 중앙 데이터 파일에서 `getStudents` 함수와 `Student` 타입 import
+import { getStudents, Student } from '@/app/lib/data';
 
 export default function StudentManagementPage() {
-  // - 학생 목록을 저장하고 UI에 반영하기 위한 상태
+  // 학생 목록을 저장하고 UI에 반영하기 위한 상태
   const [students, setStudents] = useState<Student[]>([]);
 
-  // - 컴포넌트 마운트 시, 중앙 데이터로 학생 목록 상태 초기화
+  // 컴포넌트 마운트 시, localStorage에서 학생 목록을 가져와 상태 업데이트
   useEffect(() => {
-    setStudents(mockStudentData);
+    setStudents(getStudents());
   }, []);
 
-  // - '과정수정' 버튼 클릭 핸들러
+  // '과정수정' 버튼 클릭 핸들러
   const handleEditCourse = (id: number) => alert(`과정수정 클릭: 학생 ID ${id}`);
   
-  // - '삭제' 버튼 클릭 핸들러
+  // '삭제' 버튼 클릭 핸들러 (localStorage 연동 로직은 미구현)
   const handleDelete = (id: number) => {
     if (confirm(`정말로 학생 ID ${id}를 삭제하시겠습니까?`)) {
-      setStudents(prevStudents => prevStudents.filter(student => student.id !== id));
-      alert(`학생 ID ${id}가 삭제되었습니다.`);
+      // (참고) 실제 삭제를 위해서는 lib/data.ts에 deleteStudent 함수 구현 필요
+      // setStudents(prevStudents => prevStudents.filter(student => student.id !== id));
+      alert(`학생 ID ${id} 삭제 기능은 구현되지 않았습니다.`);
     }
   };
 
@@ -33,7 +34,10 @@ export default function StudentManagementPage() {
       </header>
       
       <div className={styles.actionBar}>
-        <button className={styles.primaryButton}>수강생 추가</button>
+        {/* '수강생 추가' 버튼을 Link로 감싸 페이지 이동 기능 추가 */}
+        <Link href="/student_create_form">
+            <button className={styles.primaryButton}>수강생 추가</button>
+        </Link>
       </div>
 
       <main>
@@ -65,7 +69,7 @@ export default function StudentManagementPage() {
                   <td>{student.course}</td>
                   <td>{student.vehicle || '-'}</td>
                   <td className={styles.actionCell}>
-                    <Link href={`/student_update_form/${student.id}`} passHref>
+                    <Link href={`/student_update_form/${student.uniqueId}`} passHref>
                       <button className={styles.actionButton}>정보수정</button>
                     </Link>
                     <button onClick={() => handleEditCourse(student.id)} className={styles.actionButton}>과정수정</button>
