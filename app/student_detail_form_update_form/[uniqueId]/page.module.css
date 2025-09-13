@@ -1,0 +1,93 @@
+.container {
+  padding: 2rem;
+  max-width: 768px;
+  margin: 0 auto;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.header {
+  background-color: #16a085;
+  padding: 1rem 1.5rem;
+  margin-bottom: 2.5rem;
+  border-radius: 8px;
+}
+
+.title {
+  color: white;
+  text-align: center;
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.courseBlock {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.blockTitle {
+  margin: 0 0 1rem;
+  font-size: 1.2rem;
+  color: #343a40;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.select {
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.radioGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+.radioLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.buttonGroup {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.submitButton, .cancelButton {
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submitButton {
+  background-color: #16a085;
+  color: white;
+}
+
+.cancelButton {
+  background-color: #bdc3c7;
+  color: #2c3e50;
+}
