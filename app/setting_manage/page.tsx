@@ -1,4 +1,5 @@
 import styles from './page.module.css';
+import Link from 'next/link';
 
 
 // 관리 메뉴 항목 배열
@@ -32,9 +33,17 @@ export default function AdminDashboard() {
       <main className={styles.mainContent}>
         <div className={styles.menuGrid}>
           {adminMenuItems.map((item, index) => (
-            <button key={index} className={styles.menuButton}>
-              {item}
-            </button>
+            index === 0 ? (
+              <Link key={index} href="/student_manage">
+                <button className={styles.menuButton}>
+                  {item}
+                </button>
+              </Link>
+            ) : (
+              <button key={index} className={styles.menuButton}>
+                {item}
+              </button>
+            )
           ))}
         </div>
       </main>
