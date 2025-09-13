@@ -6,20 +6,21 @@ export type Student = {
   school: string;
   grade: number;
   member: string;
-  course: string;
+  course: number;
   vehicle: string | null;
 };
 
 // - 앱 최초 실행 시 사용될 초기 데이터
 // - 애플리케이션 전체에서 공유하는 학생 원본 데이터 배열
 const initialMockData: Student[] = [
-  { id: 1, name: '수강생1', uniqueId: 1111, school: '테스트초', grade: 1, member: '강사테스트1', course: '5일 반', vehicle: null },
-  { id: 2, name: '수강생2', uniqueId: 9111, school: '테스트초', grade: 2, member: '강사테스트2', course: '2일 반', vehicle: null },
-  { id: 3, name: '수강생3', uniqueId: 2222, school: '테스트초', grade: 1, member: '강사테스트1', course: '5일 반', vehicle: null },
-  { id: 4, name: '수강생4', uniqueId: 9222, school: '테스트초', grade: 2, member: '강사테스트2', course: '5일 반', vehicle: null },
-  { id: 5, name: '수강생5', uniqueId: 3333, school: '테스트초', grade: 1, member: '강사테스트1', course: '5일 반', vehicle: null },
-  { id: 6, name: '수강생6', uniqueId: 9333, school: '테스트초', grade: 2, member: '강사테스트2', course: '2일 반', vehicle: null },
-  { id: 7, name: '수강생7', uniqueId: 4444, school: '테스트초', grade: 1, member: '강사테스트1', course: '5일 반', vehicle: null },
+  // 👇 course 값을 모두 숫자로 변경
+  { id: 1, name: '수강생1', uniqueId: 1111, school: '테스트초', grade: 1, member: '강사테스트1', course: 5, vehicle: null },
+  { id: 2, name: '수강생2', uniqueId: 9111, school: '테스트초', grade: 2, member: '강사테스트2', course: 2, vehicle: null },
+  { id: 3, name: '수강생3', uniqueId: 2222, school: '테스트초', grade: 1, member: '강사테스트1', course: 5, vehicle: null },
+  { id: 4, name: '수강생4', uniqueId: 9222, school: '테스트초', grade: 2, member: '강사테스트2', course: 5, vehicle: null },
+  { id: 5, name: '수강생5', uniqueId: 3333, school: '테스트초', grade: 1, member: '강사테스트1', course: 5, vehicle: null },
+  { id: 6, name: '수강생6', uniqueId: 9333, school: '테스트초', grade: 2, member: '강사테스트2', course: 2, vehicle: null },
+  { id: 7, name: '수강생7', uniqueId: 4444, school: '테스트초', grade: 1, member: '강사테스트1', course: 5, vehicle: null },
 ];
 
 // - localStorage에서 학생 목록을 가져오는 함수
