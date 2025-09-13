@@ -66,13 +66,22 @@ export default function StudentManagementPage() {
                   <td>{student.school}</td>
                   <td>{student.grade}</td>
                   <td>{student.member}</td>
-                  <td>{student.course}</td>
+                  {/* 👇 숫자로 된 course 데이터에 "일 반"을 붙여서 표시 */}
+                  <td>{`${student.course}일 반`}</td>
                   <td>{student.vehicle || '-'}</td>
                   <td className={styles.actionCell}>
                     <Link href={`/student_update_form/${student.uniqueId}`} passHref>
                       <button className={styles.actionButton}>정보수정</button>
                     </Link>
-                    <button onClick={() => handleEditCourse(student.id)} className={styles.actionButton}>과정수정</button>
+                    <Link
+                      href={{
+                        pathname: `/student_detail_update_form/${student.uniqueId}`,
+                        query: { courseType: student.course }
+                      }}
+                      passHref
+                    >
+                      <button className={styles.actionButton}>과정수정</button>
+                    </Link>
                     <button onClick={() => handleDelete(student.id)} className={`${styles.actionButton} ${styles.deleteButton}`}>삭제</button>
                   </td>
                 </tr>
