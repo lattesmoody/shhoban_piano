@@ -13,7 +13,7 @@ interface FormData {
   schoolName: string;
   grade: string;
   instructor: string;
-  courseType: string;
+  courseType: number;
   useVehicle: 'O' | 'X' | '';
   notes: string;
 }
