@@ -1,0 +1,95 @@
+.container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  font-family: 'Pretendard', sans-serif;
+}
+
+.header {
+  background-color: #168a83; /* 청록색 헤더 */
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+}
+
+.title {
+  color: #fff;
+  text-align: center;
+  font-size: 1.8rem;
+  margin: 0;
+}
+
+.actionBar {
+  margin-bottom: 1.25rem;
+}
+
+.primaryButton {
+  border: none;
+  padding: 0.55rem 1.1rem;
+  border-radius: 6px;
+  color: #fff;
+  font-weight: 600;
+  background-color: #168a83;
+  cursor: pointer;
+}
+
+.primaryButton:hover { background-color: #1aa79e; }
+
+.tableContainer {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e2e6ea;
+  border-radius: 8px;
+}
+
+.memberTable {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.memberTable th,
+.memberTable td {
+  padding: 0.95rem 0.5rem;
+  border-bottom: 1px solid #e2e6ea;
+  white-space: nowrap;
+}
+
+.tableHeader { background: #f4f6f8; color: #495057; font-weight: 700; }
+
+.memberTable tbody tr:nth-child(even) { background: #f5f6f7; }
+.memberTable tbody tr:hover { background: #eef1f3; }
+.memberTable tbody tr:last-child td { border-bottom: none; }
+
+.actionCell { display: flex; justify-content: center; gap: 0.5rem; }
+
+.actionButton {
+  border: none;
+  padding: 0.4rem 0.85rem;
+  border-radius: 5px;
+  color: #fff;
+  font-weight: 600;
+  background-color: #168a83;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.actionButton:hover { background-color: #1aa79e; }
+
+.deleteButton { background-color: #c03a2b; }
+.deleteButton:hover { background-color: #e25445; }
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+
