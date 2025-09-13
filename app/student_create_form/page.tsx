@@ -21,7 +21,7 @@ export default function StudentCreateFormPage() {
     school: '',
     grade: 1,
     member: '강사테스트1', // 담당강사
-    course: '5일 반',   // 과정구분
+    course: 5,   // 과정구분
     vehicle: null,      // 차량 정보 (현재 폼에서는 입력받지 않음)
   });
 
