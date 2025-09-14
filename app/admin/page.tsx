@@ -2,8 +2,7 @@
 
 // 기존 page_admin_sample_v0.2.tsx의 레이아웃을 활용한 관리자 전용 페이지
 import { useState, useEffect } from 'react';
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { logoutAction } from './actions';
 
 interface RoomCardProps { id: number; name: string | null; time: string | null; number: string; color?: string; }
 const RoomCard = ({ id, name, time, number, color }: RoomCardProps ) => (
@@ -61,13 +60,6 @@ const DreamRoomTable = () => {
 };
 
 export default function AdminPage() {
-  async function doLogout() {
-    'use server';
-    const jar = await cookies();
-    jar.delete('auth_token');
-    redirect('/member_login');
-  }
-
   const [currentTime, setCurrentTime] = useState('');
   useEffect(() => {
     const timer = setInterval(() => {
@@ -113,7 +105,7 @@ export default function AdminPage() {
           <nav className="flex items-center space-x-6">
             <a href="#" className="text-sm hover:text-gray-300">Main</a>
             <a href="#" className="text-sm hover:text-gray-300">Manage</a>
-            <form action={doLogout}>
+            <form action={logoutAction}>
               <button type="submit" className="text-sm hover:text-gray-300">Logout</button>
             </form>
           </nav>
