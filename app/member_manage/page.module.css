@@ -5,6 +5,13 @@
   font-family: 'Pretendard', sans-serif;
 }
 
+/* 상단 글로벌 바 */
+.topBar { background-color: #F58773; color: #fff; }
+.topBarInner { max-width: 1200px; margin: 0 auto; padding: 0.5rem 1rem; display: flex; justify-content: space-between; align-items: center; }
+.welcome { font-weight: 500; }
+.topNav a { margin-left: 1.25rem; color: #fff; text-decoration: none; font-weight: 500; }
+.topNav a:hover { opacity: 0.85; }
+
 .header {
   background-color: #168a83; /* 청록색 헤더 */
   padding: 1rem 1.5rem;

@@ -6,6 +6,11 @@
   font-family: 'Pretendard', sans-serif;
 }
 
+.topBar { background: #F58773; color: #fff; }
+.topBarInner { max-width: 1200px; margin: 0 auto; padding: 0.5rem 1rem; display:flex; justify-content: space-between; align-items:center; }
+.topNav a { color:#fff; margin-left:1.25rem; text-decoration:none; font-weight:600; }
+.topNav a:hover { opacity:.85; }
+
 /* 헤더 스타일 */
 .header {
   background-color: #16a085; /* 이미지의 청록색 */

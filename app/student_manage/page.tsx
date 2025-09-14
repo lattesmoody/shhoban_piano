@@ -28,7 +28,18 @@ export default function StudentManagementPage() {
   };
 
   return (
-    <div className={styles.container}>
+    <>
+      <div className={styles.topBar}>
+        <div className={styles.topBarInner}>
+          <div className={styles.welcomeMessage}>관리자 님, 환영합니다 : )</div>
+          <nav className={styles.topNav}>
+            <a href="#">Main</a>
+            <a href="#">Manage</a>
+            <a href="#">Logout</a>
+          </nav>
+        </div>
+      </div>
+      <div className={styles.container}>
       <header className={styles.header}>
         <h1 className={styles.title}>수강생 관리</h1>
       </header>
@@ -91,5 +102,6 @@ export default function StudentManagementPage() {
         </div>
       </main>
     </div>
+    </>
   );
 }

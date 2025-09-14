@@ -28,7 +28,18 @@ export default function PracticeRoomManagePage() {
   const handleActivate = (no: number) => alert(`활성화 클릭: ${no}`);
 
   return (
-    <div className={styles.container}>
+    <>
+      <div className={styles.topBar}>
+        <div className={styles.topBarInner}>
+          <div>관리자 님, 환영합니다 : )</div>
+          <nav className={styles.topNav}>
+            <a href="#">Main</a>
+            <a href="#">Manage</a>
+            <a href="#">Logout</a>
+          </nav>
+        </div>
+      </div>
+      <div className={styles.container}>
       <header className={styles.header}><h1 className={styles.title}>연습실관리</h1></header>
       <div className={styles.actionBar}>
         <button className={styles.chip}>전체 공실</button>
@@ -69,7 +80,8 @@ export default function PracticeRoomManagePage() {
           </tbody>
         </table>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 
