@@ -20,7 +20,7 @@ export default function AdminDashboard() {
       {/* 상단 헤더 */}
       <header className={styles.header}>
         <div className={styles.welcomeMessage}>
-          <span>관리자 님, 환영합니다 :)</span>
+          <span><strong>관리자</strong> 님, 환영합니다 : )</span>
         </div>
         <nav className={styles.nav}>
           <a href="#">Main</a>
@@ -41,6 +41,12 @@ export default function AdminDashboard() {
               </Link>
             ) : index === 1 ? (
               <Link key={index} href="/member_manage">
+                <button className={styles.menuButton}>
+                  {item}
+                </button>
+              </Link>
+            ) : index === 2 ? (
+              <Link key={index} href="/practice_room_manage">
                 <button className={styles.menuButton}>
                   {item}
                 </button>

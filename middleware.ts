@@ -9,7 +9,8 @@ export async function middleware(request: NextRequest) {
   const auth = request.cookies.get('auth_token');
   if (!auth) {
     const url = request.nextUrl.clone();
-    url.pathname = '/member_login';
+    url.pathname = '/';
+    url.searchParams.set('unauthorized', '1');
     return NextResponse.redirect(url);
   }
   try {
@@ -18,7 +19,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   } catch {
     const url = request.nextUrl.clone();
-    url.pathname = '/member_login';
+    url.pathname = '/';
+    url.searchParams.set('unauthorized', '1');
     return NextResponse.redirect(url);
   }
 }

@@ -18,6 +18,16 @@ export default function HomePage() {
     // - 목적: 컴포넌트 마운트 시, 1초마다 시간 업데이트
     // - 실행 시점: 최초 렌더링 시 한 번만 실행 (의존성 배열: [])
     useEffect(() => {
+        // 미들웨어에서 unauthorized 플래그로 리다이렉트된 경우 경고 표시
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('unauthorized') === '1') {
+                alert('허용되지 않은 접근입니다!');
+                const url = new URL(window.location.href);
+                url.searchParams.delete('unauthorized');
+                window.history.replaceState({}, '', url.toString());
+            }
+        }
         // - 타이머 설정: 1초(1000ms) 간격으로 반복 실행
         const timer = setInterval(() => {
             // - Date 객체 생성: 현재 날짜 및 시간 정보 획득
