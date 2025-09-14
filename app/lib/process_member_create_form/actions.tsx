@@ -5,6 +5,7 @@ import { neon } from '@neondatabase/serverless';
 import bcrypt from 'bcrypt';
 import { redirect } from 'next/navigation';
 import { z } from 'zod'; // 데이터 유효성 검사를 위한 Zod 라이브러리
+import { insertMember, selectMemberByLoginId, buildNewMemberPayload } from '@/app/lib/sql/maps/memberQueries';
 
 require('dotenv').config({ path: './.env.development.local' }); 
 
@@ -57,20 +58,27 @@ export async function registerUser(
     // 2. 비밀번호 암호화(해싱)
     const hashedPassword = await bcrypt.hash(member_pw, saltRounds);
 
-    // 3. 데이터베이스에 사용자 정보를 삽입
-    await sql`
-      INSERT INTO members (member_id, member_name,member_code,member_pw) 
-      VALUES (${member_id}, ${member_name}, ${Number(member_code)}, ${hashedPassword})
-    `;
+    // 3. 데이터베이스에 사용자 정보를 삽입 (쿼리 매핑 파일 사용)
+    await insertMember(
+      sql as any,
+      buildNewMemberPayload(
+        member_id,
+        member_name,
+        Number(member_code),
+        hashedPassword,
+      ),
+    );
 
-    console.log(`새로운 사용자가 생성되었습니다. ID: ${member_id}`);
+    // 성공 로그(민감한 식별자 노출 방지)
+    console.log('새로운 사용자가 생성되었습니다.');
 
   } catch (error: any) {
     // 4. 에러 처리 (특히, 아이디 중복 에러)
     if (error.code === '23505') { // Postgresql의 unique_violation 에러 코드
       return '이미 사용 중인 아이디입니다.';
     }
-    console.error('강사추가 에러:', error);
+    // 내부 로그만 남기고 상세 정보는 외부에 노출하지 않음
+    console.error('강사추가 에러');
     return '강사추가 중 오류가 발생했습니다. 다시 시도해 주세요.';
   }
 
@@ -98,9 +106,7 @@ export async function authenticate(
 
     const { member_id, member_pw } = validated.data;
 
-    const userResult = (await sql`
-      SELECT member_pw FROM members WHERE member_id = ${member_id}
-    `) as { member_pw: string }[];
+    const userResult = (await selectMemberByLoginId(sql as any, member_id)) as { member_pw: string }[];
 
     if (userResult.length === 0) {
       return '아이디 또는 비밀번호가 올바르지 않습니다.';
@@ -111,13 +117,12 @@ export async function authenticate(
     if (!passwordsMatch) {
       return '아이디 또는 비밀번호가 올바르지 않습니다.';
     }
-    console.log(`로그인 성공. ID: ${member_id}`);
+    // 로그인 성공 시 민감 정보 로그 금지
+    console.log('로그인 성공');
   } catch (error) {
     if (error instanceof Error) {
-      console.error('authenticate error:', error);
-      if (process.env.NODE_ENV !== 'production') {
-        return `로그인 오류: ${error.message}`;
-      }
+      // 상세 에러 메시지 외부 노출 금지
+      console.error('authenticate error');
       return '로그인 중 오류가 발생했습니다. 다시 시도해 주세요.';
     }
     return '알 수 없는 오류가 발생했습니다.';
