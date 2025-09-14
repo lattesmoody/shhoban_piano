@@ -4,6 +4,7 @@
 // - useState: 컴포넌트의 상태 관리를 위한 훅
 // - useEffect: 사이드 이펙트(side effect) 처리를 위한 훅
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 // 메인 페이지 컴포넌트 정의
 export default function HomePage() {
@@ -57,7 +58,7 @@ export default function HomePage() {
                     {/* 우측 네비게이션 링크 */}
                     <nav className="flex items-center space-x-6">
                         <a href="#" className="text-sm hover:text-gray-700">Main</a>
-                        <a href="#" className="text-sm hover:text-gray-700">Login</a>
+                        <Link href="/member_login" className="text-sm hover:text-gray-700">Login</Link>
                     </nav>
                 </div>
             </header>
