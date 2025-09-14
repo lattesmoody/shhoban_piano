@@ -1,9 +1,10 @@
 // 실행 결과: 새로운 사용자가 생성되었습니다. ID: test
 'use server'; // 이 파일의 모든 함수를 서버에서만 실행되는 서버 액션.
-
 import { neon } from '@neondatabase/serverless';
 import bcrypt from 'bcrypt';
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
+import { SignJWT, jwtVerify } from 'jose';
 import { z } from 'zod'; // 데이터 유효성 검사를 위한 Zod 라이브러리
 import { insertMember, selectMemberByLoginId, buildNewMemberPayload } from '@/app/lib/sql/maps/memberQueries';
 
@@ -117,7 +118,23 @@ export async function authenticate(
     if (!passwordsMatch) {
       return '아이디 또는 비밀번호가 올바르지 않습니다.';
     }
-    // 로그인 성공 시 민감 정보 로그 금지
+    // 로그인 성공 처리: 인증 토큰 발급 (쿠키)
+    // JWT 생성 (HS256)
+    const secretKey = new TextEncoder().encode(process.env.AUTH_SECRET || 'dev_secret_change_me');
+    const token = await new SignJWT({ sub: member_id })
+      .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+      .setIssuedAt()
+      .setExpirationTime('8h')
+      .sign(secretKey);
+
+    const jar = await cookies();
+    jar.set('auth_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 8,
+    });
     console.log('로그인 성공');
   } catch (error) {
     if (error instanceof Error) {
@@ -127,7 +144,7 @@ export async function authenticate(
     }
     return '알 수 없는 오류가 발생했습니다.';
   }
-  // 성공 시 메인 페이지로 이동
-  redirect('/');
+  // 성공 시 관리자 대시보드로 이동
+  redirect('/admin');
 }
 
