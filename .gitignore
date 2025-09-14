@@ -34,7 +34,7 @@ yarn-error.log*
 .env*
 
 # sql mapping (local only)
-app/lib/sql/**
+app/lib/sql/members
 
 # vercel
 .vercel
