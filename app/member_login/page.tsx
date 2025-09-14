@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react';
 import styles from './page.module.css';
-import { authenticate } from '@/app/lib/process_member_create_form/actions';
+import { authenticate } from '@/app/lib/process_member_login/authenticate';
 
 export default function MemberLoginPage() {
   const [errorMessage, formAction] = useActionState(authenticate, undefined);

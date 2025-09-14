@@ -3,10 +3,8 @@
 import { neon } from '@neondatabase/serverless';
 import bcrypt from 'bcrypt';
 import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
-import { SignJWT, jwtVerify } from 'jose';
 import { z } from 'zod'; // 데이터 유효성 검사를 위한 Zod 라이브러리
-import { insertMember, selectMemberByLoginId, buildNewMemberPayload } from '@/app/lib/sql/maps/memberQueries';
+import { insertMember, buildNewMemberPayload } from '@/app/lib/sql/maps/memberQueries';
 
 require('dotenv').config({ path: './.env.development.local' }); 
 
@@ -22,11 +20,7 @@ const SignupFormSchema = z.object({
   member_code: z.string().regex(/^[0-9]+$/, { message: '강사 구분은 숫자만 입력 가능' }),
 });
 
-// 로그인 폼 스키마
-const LoginFormSchema = z.object({
-  member_id: z.string().min(1, { message: '아이디를 입력해주세요.' }),
-  member_pw: z.string().min(1, { message: '비밀번호를 입력해주세요.' }),
-});
+// 로그인 폼 스키마는 별도 파일(authenticate.ts)에서 사용
 
 /**
  * 신규 사용자를 등록하는 서버 액션 함수
@@ -90,61 +84,5 @@ export async function registerUser(
 /**
  * 기존 사용자를 인증하는 서버 액션 함수 (참고용으로 남겨둠)
  */
-export async function authenticate(
-  prevState: string | undefined,
-  formData: FormData,
-) {
-  // 로그인 로직
-  try {
-    const sql = neon(process.env.DATABASE_URL!);
-
-    const validated = LoginFormSchema.safeParse(
-      Object.fromEntries(formData.entries()),
-    );
-    if (!validated.success) {
-      return validated.error.issues.map((e) => e.message).join(', ');
-    }
-
-    const { member_id, member_pw } = validated.data;
-
-    const userResult = (await selectMemberByLoginId(sql as any, member_id)) as { member_pw: string }[];
-
-    if (userResult.length === 0) {
-      return '아이디 또는 비밀번호가 올바르지 않습니다.';
-    }
-    const user = userResult[0];
-    const passwordsMatch = await bcrypt.compare(member_pw, user.member_pw);
-
-    if (!passwordsMatch) {
-      return '아이디 또는 비밀번호가 올바르지 않습니다.';
-    }
-    // 로그인 성공 처리: 인증 토큰 발급 (쿠키)
-    // JWT 생성 (HS256)
-    const secretKey = new TextEncoder().encode(process.env.AUTH_SECRET || 'dev_secret_change_me');
-    const token = await new SignJWT({ sub: member_id })
-      .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
-      .setIssuedAt()
-      .setExpirationTime('8h')
-      .sign(secretKey);
-
-    const jar = await cookies();
-    jar.set('auth_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 8,
-    });
-    console.log('로그인 성공');
-  } catch (error) {
-    if (error instanceof Error) {
-      // 상세 에러 메시지 외부 노출 금지
-      console.error('authenticate error');
-      return '로그인 중 오류가 발생했습니다. 다시 시도해 주세요.';
-    }
-    return '알 수 없는 오류가 발생했습니다.';
-  }
-  // 성공 시 관리자 대시보드로 이동
-  redirect('/admin');
-}
+// 로그인 관련 서버 액션은 authenticate.ts로 분리
 
