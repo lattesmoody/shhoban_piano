@@ -20,6 +20,12 @@ const SignupFormSchema = z.object({
   member_code: z.string().regex(/^[0-9]+$/, { message: '강사 구분은 숫자만 입력 가능' }),
 });
 
+// 로그인 폼 스키마
+const LoginFormSchema = z.object({
+  member_id: z.string().min(1, { message: '아이디를 입력해주세요.' }),
+  member_pw: z.string().min(1, { message: '비밀번호를 입력해주세요.' }),
+});
+
 /**
  * 신규 사용자를 등록하는 서버 액션 함수
  * @param prevState - useFormState 훅에서 전달되는 이전 상태
@@ -79,41 +85,44 @@ export async function authenticate(
   prevState: string | undefined,
   formData: FormData,
 ) {
-  // ... (기존 로그인 로직)
+  // 로그인 로직
   try {
     const sql = neon(process.env.DATABASE_URL!);
-    const id = formData.get('id') as string;
-    const password = formData.get('password') as string;
 
-    /*
-      sql 함수에 제네릭 타입<T>을 직접 전달할 수 없어 발생하는 TypeScript 오류 수정 필요
-      sql 템플릿 리터럴 함수의 반환 타입을 지정하려면, 
-      함수를 호출한 결과에 as 키워드를 사용하여 타입을 단언(assertion)해야함
-      
-      변경 전: const userResult = await sql<{ password_hash: string }>`
-    */
+    const validated = LoginFormSchema.safeParse(
+      Object.fromEntries(formData.entries()),
+    );
+    if (!validated.success) {
+      return validated.error.issues.map((e) => e.message).join(', ');
+    }
+
+    const { member_id, member_pw } = validated.data;
+
     const userResult = (await sql`
-      SELECT member_pw FROM members WHERE member_id = ${Number(id)}
-    `) as { password_hash: string }[];
-
+      SELECT member_pw FROM members WHERE member_id = ${member_id}
+    `) as { member_pw: string }[];
 
     if (userResult.length === 0) {
       return '아이디 또는 비밀번호가 올바르지 않습니다.';
     }
     const user = userResult[0];
-    const passwordsMatch = await bcrypt.compare(password, user.password_hash);
+    const passwordsMatch = await bcrypt.compare(member_pw, user.member_pw);
 
     if (!passwordsMatch) {
       return '아이디 또는 비밀번호가 올바르지 않습니다.';
     }
-    console.log(`로그인 성공. ID: ${id}`);
+    console.log(`로그인 성공. ID: ${member_id}`);
   } catch (error) {
     if (error instanceof Error) {
-        console.error(error);
-        return '로그인 중 오류가 발생했습니다. 다시 시도해 주세요.';
+      console.error('authenticate error:', error);
+      if (process.env.NODE_ENV !== 'production') {
+        return `로그인 오류: ${error.message}`;
+      }
+      return '로그인 중 오류가 발생했습니다. 다시 시도해 주세요.';
     }
     return '알 수 없는 오류가 발생했습니다.';
   }
-  redirect('/dashboard');
+  // 성공 시 메인 페이지로 이동
+  redirect('/');
 }
 
