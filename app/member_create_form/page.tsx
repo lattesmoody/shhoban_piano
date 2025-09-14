@@ -33,7 +33,9 @@ export default function MemberCreateFormPage() {
               type="text" 
               // pattern="[0-9]*" // 숫자만 입력 받도록 pattern 속성 추가
               name="member_id"
-              placeholder="아이디 입력"
+              placeholder="ID를 입력해 주세요. (12자 이내)"
+              minLength={4}
+              maxLength={12}
               required
               className="w-full px-3 py-2 mt-1 transition duration-150 ease-in-out border border-gray-300 rounded-md shadow-sm appearance-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
@@ -122,7 +124,7 @@ function MemberCreateButton() {
       disabled={pending}
       className="w-full px-4 py-2 mt-4 font-semibold text-white transition duration-200 ease-in-out bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
     >
-      {pending ? '추가 진행 중...' : '멤버 추가'}
+      {pending ? '추가 진행 중...' : '생성'}
     </button>
   );
 }

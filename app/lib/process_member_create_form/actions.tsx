@@ -10,7 +10,11 @@ require('dotenv').config({ path: './.env.development.local' });
 
 // Zod를 사용해 "강사구분" 폼 데이터의 스키마를 정의하고 유효성을 검사
 const SignupFormSchema = z.object({
-  member_id: z.string().min(4, { message: '아이디는 최소 4자 이상이어야 ' }),
+  member_id: z
+    .string()
+    .trim()
+    .min(4, { message: '아이디는 최소 4자 이상이어야 ' })
+    .max(12, { message: '아이디는 최대 12자까지 입력 가능' }),
   member_pw: z.string().min(4, { message: '비밀번호는 최소 4자 이상이어야 ' }),
   member_name: z.string().min(1, { message: '이름을 입력해주세요.' }),
   member_code: z.string().regex(/^[0-9]+$/, { message: '강사 구분은 숫자만 입력 가능' }),
@@ -64,8 +68,8 @@ export async function registerUser(
     return '강사추가 중 오류가 발생했습니다. 다시 시도해 주세요.';
   }
 
-  // 5. 성공 시 메인 페이지로 리다이렉트
-  redirect('/'); 
+  // 5. 성공 시 강사 관리 페이지로 리다이렉트
+  redirect('/member_manage'); 
 }
 
 /**
