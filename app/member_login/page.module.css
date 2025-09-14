@@ -1,0 +1,11 @@
+.container { min-height: 100vh; display: flex; align-items: center; justify-content: center; font-family: 'Pretendard', sans-serif; }
+.card { width: 520px; background: #111; padding: 36px 40px 0; border-radius: 8px; }
+.title { text-align: center; font-size: 2.2rem; font-weight: 800; margin-bottom: 22px; color: #111; }
+.titleWrapper { width: 520px; margin: 40px auto 12px; }
+.row { display: flex; align-items: center; margin-bottom: 22px; }
+.label { width: 110px; background: #0c0c0c; color: #fff; padding: 10px 12px; font-weight: 800; letter-spacing: 0.15em; text-align: center; border: 2px solid #0c0c0c; }
+.input { flex: 1; height: 44px; border: none; outline: none; padding: 0 12px; margin-left: 12px; font-size: 1rem; }
+.footer { background: #f58773; padding: 18px 0; margin: 28px -40px 0; text-align: center; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; }
+.loginBtn { background: transparent; border: none; color: #fff; font-weight: 800; font-size: 1.25rem; letter-spacing: 0.3em; cursor: pointer; }
+
+
