@@ -57,6 +57,12 @@ export default function AdminDashboard() {
                   {item}
                 </button>
               </Link>
+            ) : index === 4 ? (
+              <Link key={index} href="/kinderroom_manage">
+                <button className={styles.menuButton}>
+                  {item}
+                </button>
+              </Link>
             ) : (
               <button key={index} className={styles.menuButton}>
                 {item}
