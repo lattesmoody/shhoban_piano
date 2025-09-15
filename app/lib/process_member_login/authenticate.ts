@@ -53,7 +53,7 @@ export async function authenticate(prevState: string | undefined, formData: Form
     }
     return '로그인 중 오류가 발생했습니다. 다시 시도해 주세요.';
   }
-  redirect('/admin');
+  redirect('/main');
 }
 
 

@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 
 // 관리 메뉴 항목 배열
-const adminMenuItems = [
+const mainMenuItems = [
   '수강생 관리',
   '강사 관리',
   '연습실 관리',
@@ -14,7 +14,7 @@ const adminMenuItems = [
   '일일 수강 현황 초기화',
 ];
 
-export default function AdminDashboard() {
+export default function MainDashboard() {
   return (
     <div className={styles.container}>
       {/* 상단 헤더 */}
@@ -32,7 +32,7 @@ export default function AdminDashboard() {
       {/* 메인 컨텐츠 (메뉴 버튼) */}
       <main className={styles.mainContent}>
         <div className={styles.menuGrid}>
-          {adminMenuItems.map((item, index) => (
+          {mainMenuItems.map((item, index) => (
             index === 0 ? (
               <Link key={index} href="/student_manage">
                 <button className={styles.menuButton}>
