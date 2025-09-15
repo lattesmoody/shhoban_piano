@@ -63,6 +63,12 @@ export default function AdminDashboard() {
                   {item}
                 </button>
               </Link>
+            ) : index === 5 ? (
+              <Link key={index} href="/student_attendance">
+                <button className={styles.menuButton}>
+                  {item}
+                </button>
+              </Link>
             ) : (
               <button key={index} className={styles.menuButton}>
                 {item}
