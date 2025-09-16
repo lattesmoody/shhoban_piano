@@ -63,7 +63,9 @@ export default function StudentCourseUpdatePage() {
   const courseTypeParam = searchParams.get('courseType') || '0';
 
   // - 가져온 파라미터(문자열)를 숫자(courseCount)로 변환
-  const courseCount = parseInt(courseTypeParam, 10);
+  let courseCount = parseInt(courseTypeParam, 10);
+  if (Number.isNaN(courseCount) || courseCount < 2) courseCount = 2;
+  if (courseCount > 5) courseCount = 5;
   // - 화면에 표시할 제목용 문자열 생성 (예: "5일 반")
   const courseTypeDisplay = `${courseCount}일 반`;
 
@@ -106,7 +108,7 @@ export default function StudentCourseUpdatePage() {
 
       <form onSubmit={handleSubmit} className={styles.form}>
         {/* - `courseCount`만큼 CourseBlock 컴포넌트를 반복 렌더링 */}
-        {formState.map((details, index) => (
+        {formState.slice(0, courseCount === 5 ? 5 : Math.min(courseCount, 4)).map((details, index) => (
           <CourseBlock
             key={index}
             index={index}

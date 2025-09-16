@@ -51,7 +51,8 @@ export async function createStudent(prevState: string | undefined, formData: For
     return '학생 생성 중 알 수 없는 오류가 발생했습니다.';
   }
 
-  redirect('/student_manage');
+  // 과정 상세 입력 페이지로 이동 (생성 직후 과정 개수에 맞춘 폼 노출)
+  redirect(`/student_detail_update_form/${String(uniqueId)}?courseType=${Number(course)}`);
 }
 
 

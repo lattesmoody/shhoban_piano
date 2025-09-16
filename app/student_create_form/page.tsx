@@ -39,6 +39,10 @@ export default function StudentCreateFormPage() {
   // - '생성' 버튼 클릭 시 실행되는 폼 제출 핸들러
   const [errorMessage, formAction] = useActionState(createStudent, undefined);
   
+  const handleAlertSubmit = () => {
+    alert('수강생 추가가 완료되었습니다.');
+  };
+
   return (
     // - UI 구조를 다른 페이지와 통일 (기존 Tailwind CSS -> CSS Modules)
     <div className={styles.container}>
@@ -46,7 +50,7 @@ export default function StudentCreateFormPage() {
         <h1 className={styles.title}>수강생 추가</h1>
       </header>
       
-      <form action={formAction} className={styles.studentForm}>
+      <form action={formAction} onSubmit={handleAlertSubmit} className={styles.studentForm}>
         <div className={styles.formGroup}>
           <label htmlFor="name" className={styles.label}>이름</label>
           <input type="text" id="name" name="name" value={formData.name} onChange={handleChange} className={styles.input} placeholder="수강생 이름 입력" required />
