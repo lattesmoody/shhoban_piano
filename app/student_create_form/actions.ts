@@ -46,13 +46,17 @@ export async function createStudent(prevState: string | undefined, formData: For
     ]);
   } catch (e) {
     if (e instanceof Error) {
+      // 고유번호(UNIQUE) 중복은 별도 코드로 반환
+      if ((e as any).code === '23505' || e.message.includes('students_student_id_key')) {
+        return 'DUPLICATE_STUDENT_ID';
+      }
       return `학생 생성 오류: ${e.message}`;
     }
     return '학생 생성 중 알 수 없는 오류가 발생했습니다.';
   }
 
-  // 과정 상세 입력 페이지로 이동 (생성 직후 과정 개수에 맞춘 폼 노출)
-  redirect(`/student_detail_update_form/${String(uniqueId)}?courseType=${Number(course)}`);
+  // 성공은 클라이언트에서 alert 후 이동하도록 토큰 반환
+  return `REDIRECT:/student_detail_update_form/${String(uniqueId)}?courseType=${Number(course)}`;
 }
 
 

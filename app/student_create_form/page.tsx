@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, ChangeEvent, FormEvent } from 'react';
+import React, { useState, ChangeEvent, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
 import { useActionState } from 'react';
@@ -37,11 +37,20 @@ export default function StudentCreateFormPage() {
   };
 
   // - '생성' 버튼 클릭 시 실행되는 폼 제출 핸들러
-  const [errorMessage, formAction] = useActionState(createStudent, undefined);
+  const [serverMsg, formAction] = useActionState<string | undefined, FormData>(createStudent, undefined);
   
-  const handleAlertSubmit = () => {
-    alert('수강생 추가가 완료되었습니다.');
-  };
+  useEffect(() => {
+    if (!serverMsg) return;
+    if (typeof serverMsg === 'string' && serverMsg === 'DUPLICATE_STUDENT_ID') {
+      alert('해당 고유번호가 존재합니다.');
+      return;
+    }
+    if (typeof serverMsg === 'string' && serverMsg.startsWith('REDIRECT:')) {
+      alert('수강생 추가가 완료되었습니다.');
+      const href = serverMsg.replace('REDIRECT:', '');
+      location.href = href;
+    }
+  }, [serverMsg]);
 
   return (
     // - UI 구조를 다른 페이지와 통일 (기존 Tailwind CSS -> CSS Modules)
@@ -50,7 +59,7 @@ export default function StudentCreateFormPage() {
         <h1 className={styles.title}>수강생 추가</h1>
       </header>
       
-      <form action={formAction} onSubmit={handleAlertSubmit} className={styles.studentForm}>
+      <form action={formAction} className={styles.studentForm}>
         <div className={styles.formGroup}>
           <label htmlFor="name" className={styles.label}>이름</label>
           <input type="text" id="name" name="name" value={formData.name} onChange={handleChange} className={styles.input} placeholder="수강생 이름 입력" required />
@@ -100,7 +109,9 @@ export default function StudentCreateFormPage() {
           <button type="button" onClick={() => router.back()} className={styles.cancelButton}>취소</button>
         </div>
       </form>
-      {errorMessage && <p style={{color:'#c0392b', marginTop:'8px'}}>{errorMessage}</p>}
+      {serverMsg && typeof serverMsg === 'string' && !serverMsg.startsWith('REDIRECT:') && serverMsg !== 'DUPLICATE_STUDENT_ID' && (
+        <p style={{color:'#c0392b', marginTop:'8px'}}>{String(serverMsg)}</p>
+      )}
     </div>
   );
 }
