@@ -3,8 +3,8 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
-// - 중앙 데이터 파일에서 'addStudent' 함수를 import
-import { addStudent } from '@/app/lib/data';
+import { useActionState } from 'react';
+import { createStudent } from '@/app/student_create_form/actions';
 
 /**
  * 함수 이름: StudentCreateFormPage
@@ -37,25 +37,7 @@ export default function StudentCreateFormPage() {
   };
 
   // - '생성' 버튼 클릭 시 실행되는 폼 제출 핸들러
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault(); // form의 기본 새로고침 동작 방지
-
-    // - 필수 항목 유효성 검사
-    if (!formData.name.trim() || !formData.uniqueId.trim()) {
-      alert('이름과 고유번호는 필수 항목입니다.');
-      return;
-    }
-
-    // - 중앙 데이터 관리 로직을 호출하여 학생 추가
-    addStudent({
-        ...formData,
-        uniqueId: Number(formData.uniqueId), // uniqueId를 숫자로 변환하여 전달
-    });
-
-    alert('새로운 수강생이 추가되었습니다.');
-    // - 작업 완료 후, 수강생 관리 페이지로 이동
-    router.push('/student_manage');
-  };
+  const [errorMessage, formAction] = useActionState(createStudent, undefined);
   
   return (
     // - UI 구조를 다른 페이지와 통일 (기존 Tailwind CSS -> CSS Modules)
@@ -64,7 +46,7 @@ export default function StudentCreateFormPage() {
         <h1 className={styles.title}>수강생 추가</h1>
       </header>
       
-      <form onSubmit={handleSubmit} className={styles.studentForm}>
+      <form action={formAction} className={styles.studentForm}>
         <div className={styles.formGroup}>
           <label htmlFor="name" className={styles.label}>이름</label>
           <input type="text" id="name" name="name" value={formData.name} onChange={handleChange} className={styles.input} placeholder="수강생 이름 입력" required />
@@ -102,10 +84,10 @@ export default function StudentCreateFormPage() {
         <div className={styles.formGroup}>
             <label htmlFor="course" className={styles.label}>과정구분</label>
             <select id="course" name="course" value={formData.course} onChange={handleChange} className={styles.select}>
-              <option value="2일 반">2일 반</option>
-              <option value="3일 반">3일 반</option>
-              <option value="3일 반">4일 반</option>                    
-              <option value="5일 반">5일 반</option>
+              <option value={2}>2일 반</option>
+              <option value={3}>3일 반</option>
+              <option value={4}>4일 반</option>
+              <option value={5}>5일 반</option>
             </select>
         </div>
         
@@ -114,6 +96,7 @@ export default function StudentCreateFormPage() {
           <button type="button" onClick={() => router.back()} className={styles.cancelButton}>취소</button>
         </div>
       </form>
+      {errorMessage && <p style={{color:'#c0392b', marginTop:'8px'}}>{errorMessage}</p>}
     </div>
   );
 }

@@ -3,13 +3,12 @@ import styles from './page.module.css';
 import Link from 'next/link';
 import { neon } from '@neondatabase/serverless';
 // DB에서 학생 데이터를 가져오는 함수와 Student 타입 import
-import { selectActiveStudents } from '@/app/lib/sql/maps/studentQueries';
-import { Student } from '@/app/lib/data';
+import { selectActiveStudents, StudentRow } from '@/app/lib/sql/maps/studentQueries';
 
 export default async function StudentManagementPage() {
   // DB에서 활성화된 학생 목록을 조회
   const sql = neon(process.env.DATABASE_URL!);
-  const students: Student[] = await selectActiveStudents(sql);
+  const students: StudentRow[] = await selectActiveStudents(sql);
 
   // 삭제 버튼 클릭 시 사용할 클라이언트 컴포넌트 (별도 구현 필요)
 

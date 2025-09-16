@@ -1,17 +1,13 @@
-// - 학생 데이터의 구조를 정의하는 타입 (DB 스키마에 맞게 수정)
+// - 학생 데이터의 구조를 정의하는 타입 (UI에서 사용하는 구조)
 export type Student = {
-  student_num: number;        // 순번 (PRIMARY KEY)
-  student_name: string;       // 이름
-  student_id: string;         // 고유번호 (UNIQUE)
-  student_school: string;     // 학교
-  student_grade: number;      // 학년
-  member_id: string;          // 담당강사 ID
-  member_name?: string;       // 담당강사 이름 (조인 결과)
-  course_code: number;        // 과정구분
-  vehicle_yn: boolean;        // 차량탑승여부
-  special_notes?: string;     // 특이사항
-  is_active: boolean;         // 활성화 여부
-  created_time?: string;      // 생성시간
+  id: number;                 // 순번 (로컬 식별자)
+  name: string;               // 이름
+  uniqueId: number;           // 고유번호
+  school: string;             // 학교
+  grade: number;              // 학년
+  member: string;             // 담당강사
+  course: number;             // 과정구분
+  vehicle: string | null;     // 차량 정보
 };
 
 // - 앱 최초 실행 시 사용될 초기 데이터
