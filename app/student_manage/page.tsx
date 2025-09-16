@@ -1,31 +1,17 @@
-'use client'; 
-
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import styles from './page.module.css';
 import Link from 'next/link';
-// 중앙 데이터 파일에서 `getStudents` 함수와 `Student` 타입 import
-import { getStudents, Student } from '@/app/lib/data';
+import { neon } from '@neondatabase/serverless';
+// DB에서 학생 데이터를 가져오는 함수와 Student 타입 import
+import { selectActiveStudents } from '@/app/lib/sql/maps/studentQueries';
+import { Student } from '@/app/lib/data';
 
-export default function StudentManagementPage() {
-  // 학생 목록을 저장하고 UI에 반영하기 위한 상태
-  const [students, setStudents] = useState<Student[]>([]);
+export default async function StudentManagementPage() {
+  // DB에서 활성화된 학생 목록을 조회
+  const sql = neon(process.env.DATABASE_URL!);
+  const students: Student[] = await selectActiveStudents(sql);
 
-  // 컴포넌트 마운트 시, localStorage에서 학생 목록을 가져와 상태 업데이트
-  useEffect(() => {
-    setStudents(getStudents());
-  }, []);
-
-  // '과정수정' 버튼 클릭 핸들러
-  const handleEditCourse = (id: number) => alert(`과정수정 클릭: 학생 ID ${id}`);
-  
-  // '삭제' 버튼 클릭 핸들러 (localStorage 연동 로직은 미구현)
-  const handleDelete = (id: number) => {
-    if (confirm(`정말로 학생 ID ${id}를 삭제하시겠습니까?`)) {
-      // (참고) 실제 삭제를 위해서는 lib/data.ts에 deleteStudent 함수 구현 필요
-      // setStudents(prevStudents => prevStudents.filter(student => student.id !== id));
-      alert(`학생 ID ${id} 삭제 기능은 구현되지 않았습니다.`);
-    }
-  };
+  // 삭제 버튼 클릭 시 사용할 클라이언트 컴포넌트 (별도 구현 필요)
 
   return (
     <>
@@ -70,30 +56,30 @@ export default function StudentManagementPage() {
             </thead>
             <tbody>
               {students.map((student, index) => (
-                <tr key={student.id}>
+                <tr key={student.student_id}>
                   <td>{index + 1}</td>
-                  <td>{student.name}</td>
-                  <td>{student.uniqueId}</td>
-                  <td>{student.school}</td>
-                  <td>{student.grade}</td>
-                  <td>{student.member}</td>
-                  {/* 👇 숫자로 된 course 데이터에 "일 반"을 붙여서 표시 */}
-                  <td>{`${student.course}일 반`}</td>
-                  <td>{student.vehicle || '-'}</td>
+                  <td>{student.student_name}</td>
+                  <td>{student.student_id}</td>
+                  <td>{student.student_school}</td>
+                  <td>{student.student_grade}</td>
+                  <td>{student.member_name || student.member_id}</td>
+                  {/* 👇 숫자로 된 course_code 데이터에 "일 반"을 붙여서 표시 */}
+                  <td>{`${student.course_code}일 반`}</td>
+                  <td>{student.vehicle_yn ? '탑승' : '-'}</td>
                   <td className={styles.actionCell}>
-                    <Link href={`/student_update_form/${student.uniqueId}`} passHref>
+                    <Link href={`/student_update_form/${student.student_id}`} passHref>
                       <button className={styles.actionButton}>정보수정</button>
                     </Link>
                     <Link
                       href={{
-                        pathname: `/student_detail_update_form/${student.uniqueId}`,
-                        query: { courseType: student.course }
+                        pathname: `/student_detail_update_form/${student.student_id}`,
+                        query: { courseType: student.course_code }
                       }}
                       passHref
                     >
                       <button className={styles.actionButton}>과정수정</button>
                     </Link>
-                    <button onClick={() => handleDelete(student.id)} className={`${styles.actionButton} ${styles.deleteButton}`}>삭제</button>
+                    <button className={`${styles.actionButton} ${styles.deleteButton}`}>삭제</button>
                   </td>
                 </tr>
               ))}

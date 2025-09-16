@@ -86,6 +86,10 @@ export default function StudentCreateFormPage() {
                 <option value={4}>4학년</option>
                 <option value={5}>5학년</option>
                 <option value={6}>6학년</option>
+                <option value="중·고등부">중·고등부</option>
+                <option value="대회부">대회부</option>       
+                <option value="연주회부">연주회부</option>     
+                <option value="성인부">성인부</option>   
             </select>
         </div>
         <div className={styles.formGroup}>
@@ -98,9 +102,10 @@ export default function StudentCreateFormPage() {
         <div className={styles.formGroup}>
             <label htmlFor="course" className={styles.label}>과정구분</label>
             <select id="course" name="course" value={formData.course} onChange={handleChange} className={styles.select}>
-                <option value="2일 반">2일 반</option>
-                <option value="3일 반">3일 반</option>
-                <option value="5일 반">5일 반</option>
+              <option value="2일 반">2일 반</option>
+              <option value="3일 반">3일 반</option>
+              <option value="3일 반">4일 반</option>                    
+              <option value="5일 반">5일 반</option>
             </select>
         </div>
         
