@@ -35,6 +35,7 @@ yarn-error.log*
 
 # sql mapping (local only)
 app/lib/sql/members
+app/lib/sql/students
 
 # vercel
 .vercel
