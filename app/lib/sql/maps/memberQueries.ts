@@ -63,4 +63,16 @@ export async function deleteMemberByLoginId(sql: any, loginId: string): Promise<
   await (sql as any).query(envSql, [loginId]);
 }
 
+export async function selectMemberRoleCode(sql: any, loginId: string): Promise<number | null> {
+  const envSql = normalizePlaceholders(process.env.SELECT_MEMBER_ROLE_BY_ID_SQL);
+  if (!envSql) throw new Error('SELECT_MEMBER_ROLE_BY_ID_SQL 환경변수가 설정되지 않았습니다.');
+  const result = await (sql as any).query(envSql, [loginId]);
+  const rows: any[] = Array.isArray(result)
+    ? result
+    : (result && (result as any).rows && Array.isArray((result as any).rows) ? (result as any).rows : []);
+  if (!rows || rows.length === 0) return null;
+  const code = rows[0]?.member_code;
+  return (code === null || code === undefined) ? null : Number(code);
+}
+
 

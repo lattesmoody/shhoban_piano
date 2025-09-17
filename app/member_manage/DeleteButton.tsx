@@ -4,11 +4,15 @@ import React, { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { deleteMember } from './actions';
 
-export default function DeleteButton({ loginId, className }: { loginId: string; className?: string; }) {
+export default function DeleteButton({ loginId, roleCode, className }: { loginId: string; roleCode?: number; className?: string; }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   const handleClick = () => {
+    if (roleCode === 99) {
+      alert('관리자 계정은 삭제할 수 없습니다.');
+      return;
+    }
     if (!confirm(`정말로 '${loginId}' 계정을 삭제하시겠습니까?`)) return;
     startTransition(async () => {
       const fd = new FormData();

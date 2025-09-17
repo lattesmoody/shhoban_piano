@@ -62,7 +62,7 @@ export default async function MemberManagePage() {
                   <td>{Number(row.member_code)}</td>
                   <td className={styles.actionCell}>
                     <EditButton memberId={row.member_id} className={styles.actionButton} />
-                    <DeleteButton loginId={row.member_id} className={`${styles.actionButton} ${styles.deleteButton}`} />
+                    <DeleteButton loginId={row.member_id} roleCode={Number(row.member_code)} className={`${styles.actionButton} ${styles.deleteButton}`} />
                   </td>
                 </tr>
               ))}

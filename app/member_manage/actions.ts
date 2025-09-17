@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { neon } from '@neondatabase/serverless';
-import { deleteMemberByLoginId } from '@/app/lib/sql/maps/memberQueries';
+import { deleteMemberByLoginId, selectMemberRoleCode } from '@/app/lib/sql/maps/memberQueries';
 
 export async function deleteMember(formData: FormData) {
   const loginId = String(formData.get('loginId') || '').trim();
@@ -11,6 +11,10 @@ export async function deleteMember(formData: FormData) {
   }
   try {
     const sql = neon(process.env.DATABASE_URL!);
+    const roleCode = await selectMemberRoleCode(sql, loginId);
+    if (roleCode === 99) {
+      return { ok: false, message: '관리자 계정은 삭제할 수 없습니다.' };
+    }
     await deleteMemberByLoginId(sql, loginId);
     revalidatePath('/member_manage');
     return { ok: true };
