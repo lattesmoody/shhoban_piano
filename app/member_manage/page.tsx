@@ -1,50 +1,14 @@
-'use client';
-
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import styles from './page.module.css';
 import Link from 'next/link';
+import DeleteButton from './DeleteButton';
+import EditButton from './EditButton';
+import { neon } from '@neondatabase/serverless';
+import { selectAllMembers, MemberListRow } from '@/app/lib/sql/maps/memberQueries';
 
-type MemberRow = {
-  id: number; // 순번
-  loginId: string; // 아이디
-  name: string; // 이름
-  roleCode: number; // 강사 구분(숫자)
-};
-
-// 첨부 스크린샷의 데이터 반영
-const defaultRows: MemberRow[] = [
-  { id: 1, loginId: 'testadmin', name: '관리자', roleCode: 99 },
-  { id: 2, loginId: 'testhm00', name: '원장', roleCode: 0 },
-  { id: 3, loginId: 'testhm01', name: '강사1', roleCode: 1 },
-  { id: 4, loginId: 'testhm02', name: '강사2', roleCode: 2 },
-  { id: 5, loginId: 'testview01', name: '뷰01', roleCode: 3 },
-  { id: 6, loginId: 'testview02', name: '뷰02', roleCode: 3 },
-  { id: 7, loginId: 'testview03', name: '뷰03', roleCode: 3 },
-];
-
-export default function MemberManagePage() {
-  const [rows, setRows] = useState<MemberRow[]>([]);
-
-  useEffect(() => {
-    const envJson = process.env.NEXT_PUBLIC_MEMBER_ROWS_JSON;
-    if (!envJson) {
-      setRows(defaultRows);
-      return;
-    }
-    try {
-      const parsed = JSON.parse(envJson) as MemberRow[];
-      const normalized = parsed.map((r, i) => ({
-        id: typeof r.id === 'number' ? r.id : i + 1,
-        loginId: r.loginId ?? '',
-        name: r.name ?? '',
-        roleCode: typeof r.roleCode === 'number' ? r.roleCode : Number(r.roleCode) || 0,
-      }));
-      setRows(normalized);
-    } catch (e) {
-      console.warn('환경변수 NEXT_PUBLIC_MEMBER_ROWS_JSON 파싱 실패. 기본값 사용', e);
-      setRows(defaultRows);
-    }
-  }, []);
+export default async function MemberManagePage() {
+  const sql = neon(process.env.DATABASE_URL!);
+  const members: MemberListRow[] = await selectAllMembers(sql);
 
   const handleEdit = (id: number) => alert(`수정 클릭: 순번 ${id}`);
   const handleDelete = (id: number) => {
@@ -90,15 +54,15 @@ export default function MemberManagePage() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
-                <tr key={row.id}>
-                  <td>{row.id}</td>
-                  <td>{row.loginId}</td>
-                  <td>{row.name}</td>
-                  <td>{row.roleCode}</td>
+              {members.map((row, idx) => (
+                <tr key={row.member_id}>
+                  <td>{idx + 1}</td>
+                  <td>{row.member_id}</td>
+                  <td>{row.member_name}</td>
+                  <td>{Number(row.member_code)}</td>
                   <td className={styles.actionCell}>
-                    <button onClick={() => handleEdit(row.id)} className={styles.actionButton}>수정</button>
-                    <button onClick={() => handleDelete(row.id)} className={`${styles.actionButton} ${styles.deleteButton}`}>삭제</button>
+                    <EditButton memberId={row.member_id} className={styles.actionButton} />
+                    <DeleteButton loginId={row.member_id} className={`${styles.actionButton} ${styles.deleteButton}`} />
                   </td>
                 </tr>
               ))}
