@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useActionState, useEffect } from 'react';
+import React, { useActionState, useEffect, Suspense } from 'react';
 import styles from './page.module.css';
 import { updateMember } from './actions';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function MemberUpdateFormPage() {
+function MemberUpdateFormPageBody() {
   const router = useRouter();
   const params = useSearchParams();
   const memberId = params.get('memberId') || '';
@@ -51,6 +51,14 @@ export default function MemberUpdateFormPage() {
         ) : null}
       </form>
     </div>
+  );
+}
+
+export default function MemberUpdateFormPage() {
+  return (
+    <Suspense fallback={null}>
+      <MemberUpdateFormPageBody />
+    </Suspense>
   );
 }
 
