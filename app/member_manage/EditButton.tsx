@@ -1,13 +1,22 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function EditButton({ memberId, className }: { memberId: string; className?: string; }) {
+export default function EditButton({ memberId, memberName, roleCode, className }: { memberId: string; memberName: string; roleCode: number; className?: string; }) {
+  const router = useRouter();
   return (
     <button
       type="button"
       className={className}
-      onClick={() => alert(`수정 클릭: 아이디 ${memberId}`)}
+      onClick={() => {
+        const q = new URLSearchParams({
+          memberId,
+          memberName,
+          roleCode: String(roleCode),
+        });
+        router.push(`/member_update_form?${q.toString()}`);
+      }}
     >
       수정
     </button>
