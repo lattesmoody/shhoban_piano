@@ -22,7 +22,7 @@ export default function HomePage() {
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
             if (params.get('unauthorized') === '1') {
-                alert('허용되지 않은 접근입니다!');
+                alert('로그인 해주세요!');
                 const url = new URL(window.location.href);
                 url.searchParams.delete('unauthorized');
                 window.history.replaceState({}, '', url.toString());

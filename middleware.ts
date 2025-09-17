@@ -3,8 +3,16 @@ import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
 export async function middleware(request: NextRequest) {
-  const isAdminPath = request.nextUrl.pathname.startsWith('/admin');
-  if (!isAdminPath) return NextResponse.next();
+  // 허용 경로는 통과 (루트, 로그인 페이지 등)
+  const path = request.nextUrl.pathname;
+  const allow = (
+    path === '/' ||
+    path.startsWith('/member_login') ||
+    path.startsWith('/_next') ||
+    path.startsWith('/api') ||
+    path === '/favicon.ico'
+  );
+  if (allow) return NextResponse.next();
 
   const auth = request.cookies.get('auth_token');
   if (!auth) {
@@ -25,6 +33,11 @@ export async function middleware(request: NextRequest) {
   }
 }
 
-export const config = { matcher: ['/admin/:path*'] };
+export const config = {
+  matcher: [
+    // 모든 경로를 대상으로 하되, 정적/로그인/루트 등은 제외
+    '/((?!$|member_login|api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+};
 
 
