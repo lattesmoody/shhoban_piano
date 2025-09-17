@@ -1,6 +1,14 @@
 // 학생 관련 DB 쿼리 매핑 레이어
 require('dotenv').config({ path: './.env.development.local' }); 
 
+function normalizePlaceholders(raw: string | undefined): string {
+  const input = (raw || '').trim();
+  if (!input) return '';
+  let normalized = input.replace(/\\\$(\d+)/g, (_m, d) => `$${d}`);
+  normalized = normalized.replace(/`(\$\d+)/g, (_m, g1) => g1);
+  return normalized;
+}
+
 // DB 결과 형태 타입 (쿼리 컬럼과 동일)
 export type StudentRow = {
   student_num: number;
@@ -28,5 +36,13 @@ export async function selectActiveStudents(sql: any): Promise<StudentRow[]> {
     return rows as StudentRow[];
   }
   throw new Error('SELECT_ACTIVE_STUDENTS_SQL 환경변수가 설정되지 않았습니다. 운영/개발 환경변수에 SQL을 등록해 주세요.');
+}
+
+export async function deleteStudentById(sql: any, studentId: string): Promise<void> {
+  const envSql = normalizePlaceholders(process.env.DELETE_STUDENT_BY_ID_SQL);
+  if (!envSql) {
+    throw new Error('DELETE_STUDENT_BY_ID_SQL 환경변수가 설정되지 않았습니다.');
+  }
+  await (sql as any).query(envSql, [studentId]);
 }
 

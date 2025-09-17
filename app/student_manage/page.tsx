@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { neon } from '@neondatabase/serverless';
 // DB에서 학생 데이터를 가져오는 함수와 Student 타입 import
 import { selectActiveStudents, StudentRow } from '@/app/lib/sql/maps/studentQueries';
+import { deleteStudent } from './actions';
+import DeleteButton from './DeleteButton';
 
 export default async function StudentManagementPage() {
   // DB에서 활성화된 학생 목록을 조회
@@ -78,7 +80,7 @@ export default async function StudentManagementPage() {
                     >
                       <button className={styles.actionButton}>과정수정</button>
                     </Link>
-                    <button className={`${styles.actionButton} ${styles.deleteButton}`}>삭제</button>
+                    <DeleteButton studentId={student.student_id} className={`${styles.actionButton} ${styles.deleteButton}`} />
                   </td>
                 </tr>
               ))}
