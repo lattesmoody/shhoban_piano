@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import styles from './page.module.css';
+import { updateStudentCourses, loadStudentCourses } from './actions';
 
 // - 각 과정 블록의 데이터 타입을 정의
 type CourseDetail = {
@@ -16,7 +17,7 @@ const CourseBlock = ({ index, details, onDetailsChange }: {
   details: CourseDetail;
   onDetailsChange: (index: number, field: keyof CourseDetail, value: string) => void;
 }) => {
-  const daysOfWeek = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'];
+  const daysOfWeek = ['월요일', '화요일', '수요일', '목요일', '금요일'];
   const lessons = ['피아노+이론', '피아노+드럼', '드럼', '피아노'];
 
   return (
@@ -24,6 +25,7 @@ const CourseBlock = ({ index, details, onDetailsChange }: {
       <h3 className={styles.blockTitle}>{`#${index + 1} 과정`}</h3>
       <div className={styles.controls}>
         <select
+          name={`day_${index}`}
           value={details.day}
           onChange={(e) => onDetailsChange(index, 'day', e.target.value)}
           className={styles.select}
@@ -35,7 +37,7 @@ const CourseBlock = ({ index, details, onDetailsChange }: {
             <label key={lesson} className={styles.radioLabel}>
               <input
                 type="radio"
-                name={`lesson-${index}`}
+                name={`lesson_${index}`}
                 value={lesson}
                 checked={details.lesson === lesson}
                 onChange={(e) => onDetailsChange(index, 'lesson', e.target.value)}
@@ -74,12 +76,36 @@ export default function StudentCourseUpdatePage() {
 
   // - 페이지 로드 시 `courseCount`에 맞춰 폼 상태 초기화
   useEffect(() => {
-    const initialFormState = Array.from({ length: courseCount }, () => ({
-      day: '월요일',
-      lesson: '피아노',
-    }));
-    setFormState(initialFormState);
-  }, [courseCount]);
+    const weekdays = ['월요일', '화요일', '수요일', '목요일', '금요일'];
+    (async () => {
+      try {
+        const saved = await loadStudentCourses(studentUniqueId);
+        if (saved && saved.length > 0) {
+          // 저장된 값이 있으면 슬롯 수에 맞춰 채움
+          const initial = Array.from({ length: courseCount }, (_, idx) => {
+            const hit = saved.find(s => s.courseIndex === idx + 1);
+            return {
+              day: hit?.day || weekdays[idx % weekdays.length],
+              lesson: hit?.lesson || '',
+            };
+          });
+          setFormState(initial);
+        } else {
+          const initial = Array.from({ length: courseCount }, (_, idx) => ({
+            day: weekdays[idx % weekdays.length],
+            lesson: '',
+          }));
+          setFormState(initial);
+        }
+      } catch {
+        const fallback = Array.from({ length: courseCount }, (_, idx) => ({
+          day: weekdays[idx % weekdays.length],
+          lesson: '',
+        }));
+        setFormState(fallback);
+      }
+    })();
+  }, [courseCount, studentUniqueId]);
 
   // - 하위 컴포넌트의 변경사항을 부모 상태에 반영하는 핸들러
   const handleDetailChange = (index: number, field: keyof CourseDetail, value: string) => {
@@ -88,15 +114,25 @@ export default function StudentCourseUpdatePage() {
     setFormState(updatedState);
   };
 
-  // - 폼 제출 핸들러
-  const handleSubmit = (e: React.FormEvent) => {
-    // - 브라우저 기본 새로고침 동작 방지
-    e.preventDefault();
-    // - 수정된 데이터를 콘솔에 출력 (API 호출 시뮬레이션)
-    console.log('수정된 과정 데이터:', { studentUniqueId, details: formState });
-    alert('과정 정보가 수정되었습니다.');
-    // - 수강생 관리 페이지로 이동
-    router.push('/student_manage');
+  const viewCount = courseCount === 5 ? 5 : Math.min(courseCount, 4);
+
+  // - 제출 시 유효성 검사: 과정(레슨) 필수 선택 + 요일 중복 금지(월~금 범위)
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const current = formState.slice(0, viewCount);
+    const hasEmptyLesson = current.some(item => !item.lesson);
+    if (hasEmptyLesson) {
+      e.preventDefault();
+      alert('과정 선택은 필수 입니다.');
+      return;
+    }
+
+    const days = current.map(item => item.day);
+    const uniqueDays = new Set(days);
+    if (uniqueDays.size !== days.length) {
+      e.preventDefault();
+      alert('요일 설정 다시 확인해주세요');
+      return;
+    }
   };
 
   return (
@@ -106,9 +142,11 @@ export default function StudentCourseUpdatePage() {
         <h1 className={styles.title}>{`수강생 과정 수정 [ ${courseTypeDisplay} ]`}</h1>
       </header>
 
-      <form onSubmit={handleSubmit} className={styles.form}>
+      <form action={updateStudentCourses} onSubmit={handleSubmit} className={styles.form}>
+        <input type="hidden" name="studentId" value={studentUniqueId} />
+        <input type="hidden" name="count" value={viewCount} />
         {/* - `courseCount`만큼 CourseBlock 컴포넌트를 반복 렌더링 */}
-        {formState.slice(0, courseCount === 5 ? 5 : Math.min(courseCount, 4)).map((details, index) => (
+        {formState.slice(0, viewCount).map((details, index) => (
           <CourseBlock
             key={index}
             index={index}
