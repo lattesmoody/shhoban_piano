@@ -16,4 +16,5 @@
 .btn { border: none; padding: 0.35rem 0.7rem; border-radius: 5px; color: #fff; background: #27ae60; font-size: 0.85rem; cursor: pointer; }
 .btnDelete { background: #c0392b; }
 .btnActivate { background: #168a83; }
+.btnActivateDisabled { background: #b8bfc6; }
 
