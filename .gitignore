@@ -46,5 +46,5 @@ app/lib/sql/schema
 next-env.d.ts
 
 # testfile
-seed.js
+/scripts/
 /_tmp/
