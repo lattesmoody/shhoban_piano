@@ -13,6 +13,7 @@ export type PracticeRow = {
   room_no: number;
   student_name: string | null;
   student_id: string | null;
+  student_grade: number | null;
   in_time: string | null;
   out_time: string | null;
   turns: number;

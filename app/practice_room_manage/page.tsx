@@ -46,10 +46,10 @@ export default async function PracticeRoomManagePage() {
               {rows.map((r) => (
                 <tr key={r.room_no}>
                   <td>{r.room_no}</td>
-                  <td>{r.student_name ?? ''}</td>
+                  <td>{r.student_name ? `${r.student_name}${r.student_grade ? ` (${r.student_grade})` : ''}` : ''}</td>
                   <td>{r.student_id ?? ''}</td>
-                  <td>{r.in_time ?? ''}</td>
-                  <td>{r.out_time ?? ''}</td>
+                  <td>{formatTimeCell(r.in_time)}</td>
+                  <td>{formatTimeCell(r.out_time)}</td>
                   <td>{r.turns ? (r.turns || '') : ''}</td>
                   <td>{r.usage_yn}</td>
                   <td>
@@ -69,3 +69,16 @@ export default async function PracticeRoomManagePage() {
 }
 
 
+
+function formatTimeCell(value: unknown): string {
+  if (!value) return '';
+  try {
+    const d = value instanceof Date ? value : new Date(String(value));
+    if (Number.isNaN(d.getTime())) return '';
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return `${hh} : ${mm}`;
+  } catch {
+    return '';
+  }
+}
