@@ -50,7 +50,7 @@ export default async function PracticeRoomManagePage() {
                   <td>{r.student_id ?? ''}</td>
                   <td>{r.in_time ?? ''}</td>
                   <td>{r.out_time ?? ''}</td>
-                  <td>{r.turns}</td>
+                  <td>{r.turns ? (r.turns || '') : ''}</td>
                   <td>{r.usage_yn}</td>
                   <td>
                     <div className={styles.actions}>
