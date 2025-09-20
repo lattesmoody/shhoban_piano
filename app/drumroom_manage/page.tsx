@@ -48,7 +48,7 @@ export default function DrumRoomManagePage(){
                 <td>{r.uniqueId}</td>
                 <td>{r.inTime}</td>
                 <td>{r.outTime}</td>
-                <td>{r.turns}</td>
+                <td>{r.turns ? (r.turns || '') : ''}</td>
                 <td>{r.usage}</td>
                 <td><div className={styles.actions}><button className={styles.btn} onClick={()=>handleDelete(r.no)}>삭제</button></div></td>
               </tr>
