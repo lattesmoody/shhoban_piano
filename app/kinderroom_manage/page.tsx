@@ -1,21 +1,21 @@
-'use client';
-
-import React from 'react';
 import styles from './page.module.css';
+import { neon } from '@neondatabase/serverless';
+import { selectKinderStatus, KinderRow } from '@/app/lib/sql/maps/kinderRoomQueries';
+import DeleteButton from './DeleteButton';
+import ActivateButton from './ActivateButton';
+import AllEmptyButton from './AllEmptyButton';
+import AllLectureButton from './AllLectureButton';
 
-type Row = { no:number; name:string; uniqueId:string; inTime:string; outTime:string; turns:number; usage:number };
-const mock: Row[] = Array.from({length:6}, (_,i)=>({ no:i+1, name:'()', uniqueId:'', inTime:'', outTime:'', turns:0, usage:0 }));
-
-export default function KinderRoomManagePage(){
-  const handleDelete = (no:number)=>alert(`삭제 클릭: ${no}`);
-  const handleActivate = (no:number)=>alert(`활성화 클릭: ${no}`);
+export default async function KinderRoomManagePage(){
+  const sql = neon(process.env.DATABASE_URL!);
+  const rows: KinderRow[] = await selectKinderStatus(sql);
 
   return (
     <div className={styles.container}>
       <header className={styles.header}><h1 className={styles.title}>유치부실관리</h1></header>
       <div className={styles.actionBar}>
-        <button className={styles.chip}>전체 공실</button>
-        <button className={styles.chip}>전체 특강</button>
+        <AllEmptyButton />
+        <AllLectureButton />
       </div>
       <div className={styles.tableWrap}>
         <table className={styles.table}>
@@ -32,19 +32,19 @@ export default function KinderRoomManagePage(){
             </tr>
           </thead>
           <tbody className={styles.tbody}>
-            {mock.map(r=> (
-              <tr key={r.no}>
-                <td>{r.no}</td>
-                <td>{r.name}</td>
-                <td>{r.uniqueId}</td>
-                <td>{r.inTime}</td>
-                <td>{r.outTime}</td>
+            {rows.map((r) => (
+              <tr key={r.room_no}>
+                <td>{r.room_no}</td>
+                <td>{r.student_name ? `${r.student_name}${r.student_grade ? ` (${r.student_grade})` : ''}` : ''}</td>
+                <td>{r.student_id ?? ''}</td>
+                <td>{formatTimeCell(r.in_time)}</td>
+                <td>{formatTimeCell(r.out_time)}</td>
                 <td>{r.turns ? (r.turns || '') : ''}</td>
-                <td>{r.usage}</td>
+                <td>{r.usage_yn}</td>
                 <td>
                   <div className={styles.actions}>
-                    <button className={styles.btn} onClick={()=>handleDelete(r.no)}>삭제</button>
-                    <button className={styles.btnActivate} onClick={()=>handleActivate(r.no)}>활성화</button>
+                    <DeleteButton roomNo={r.room_no} />
+                    <ActivateButton roomNo={r.room_no} enabled={!!r.is_enabled} />
                   </div>
                 </td>
               </tr>
@@ -56,4 +56,16 @@ export default function KinderRoomManagePage(){
   );
 }
 
+function formatTimeCell(value: unknown): string {
+  if (!value) return '';
+  try {
+    const d = value instanceof Date ? value : new Date(String(value));
+    if (Number.isNaN(d.getTime())) return '';
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return `${hh} : ${mm}`;
+  } catch {
+    return '';
+  }
+}
 
