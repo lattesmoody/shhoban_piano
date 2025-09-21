@@ -39,7 +39,7 @@ export default async function KinderRoomManagePage(){
                 <td>{r.student_id ?? ''}</td>
                 <td>{formatTimeCell(r.in_time)}</td>
                 <td>{formatTimeCell(r.out_time)}</td>
-                <td>{r.turns ? (r.turns || '') : ''}</td>
+                <td>{computeTurnsFromOutTime(r.out_time)}</td>
                 <td>{r.usage_yn}</td>
                 <td>
                   <div className={styles.actions}>
@@ -64,6 +64,20 @@ function formatTimeCell(value: unknown): string {
     const hh = String(d.getHours()).padStart(2, '0');
     const mm = String(d.getMinutes()).padStart(2, '0');
     return `${hh} : ${mm}`;
+  } catch {
+    return '';
+  }
+}
+
+function computeTurnsFromOutTime(value: unknown): string {
+  if (!value) return '';
+  try {
+    const d = value instanceof Date ? value : new Date(String(value));
+    if (Number.isNaN(d.getTime())) return '';
+    const minute = d.getMinutes();
+    if (minute === 0 || minute >= 56) return '12';
+    const idx = Math.ceil(minute / 5);
+    return String(idx);
   } catch {
     return '';
   }

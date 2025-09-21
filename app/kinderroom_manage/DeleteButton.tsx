@@ -13,6 +13,8 @@ export default function DeleteButton({ roomNo }: { roomNo: number }) {
       className={`${styles.btn} ${styles.btnDelete}`}
       onClick={() =>
         start(async () => {
+          const ok = confirm('삭제하시겠습니까?');
+          if (!ok) return;
           await deleteStatus(roomNo);
           alert('삭제되었습니다.');
           router.refresh();

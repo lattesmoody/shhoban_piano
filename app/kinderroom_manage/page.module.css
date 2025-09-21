@@ -11,4 +11,5 @@
 .actions { display:flex; justify-content:center; gap:6px; }
 .btn { border:none; padding:.35rem .7rem; border-radius:5px; color:#fff; background:#c0392b; font-size:.85rem; cursor:pointer; }
 .btnActivate { border:none; padding:.35rem .7rem; border-radius:5px; color:#fff; background:#168a83; font-size:.85rem; cursor:pointer; }
+.btnActivateDisabled { border:none; padding:.35rem .7rem; border-radius:5px; color:#fff; background:#6c757d; font-size:.85rem; cursor:pointer; }
 
