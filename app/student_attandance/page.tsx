@@ -27,7 +27,7 @@ export default async function StudentAttendancePage({ searchParams }: { searchPa
       <header className={styles.header}><h1 className={styles.title}>수강생 출석 현황</h1></header>
       <form className={styles.filterBar}>
         <select name="y" defaultValue={y} className={styles.select}>
-          {Array.from({length:5}, (_,i)=> y-2+i).map(v=> <option key={v} value={v}>{v}</option>)}
+          {Array.from({length: 5}, (_,i)=> y-2+i).map(v=> <option key={v} value={v}>{v}</option>)}
         </select>
         <select name="m" defaultValue={m} className={styles.select}>
           {Array.from({length:12}, (_,i)=>i+1).map(v=> <option key={v} value={v}>{pad(v)}</option>)}
@@ -68,3 +68,5 @@ export default async function StudentAttendancePage({ searchParams }: { searchPa
     </div>
   );
 }
+
+

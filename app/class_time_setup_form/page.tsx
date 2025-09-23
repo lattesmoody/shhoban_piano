@@ -1,23 +1,35 @@
-'use client';
-
-import React from 'react';
+import { neon } from '@neondatabase/serverless';
+import Link from 'next/link';
+import { Suspense } from 'react';
+import UpdatedAlert from './UpdatedAlert';
+import { selectClassTimeSettings } from '../lib/sql/maps/classTimeQueries';
+import { saveClassTimeSettings } from './actions';
 import styles from './page.module.css';
 
-type GradeKey = '유치부'|'초등부'|'중고등부'|'대학부'|'연주회부';
-type CourseKey = '피아노+이론_피아노'|'피아노+이론_이론'|'피아노+드럼_피아노'|'피아노+드럼_드럼'|'드럼'|'피아노';
+export const dynamic = 'force-dynamic';
 
-const grades: GradeKey[] = ['유치부','초등부','중고등부','대학부','연주회부'];
-const headers = ['과정','피아노+이론','피아노+드럼','드럼','피아노'];
-const subHeaders = ['피아노','이론','피아노','드럼','',''];
+const grades = ['유치부','초등부','중고등부','대학부','연주회부'];
 
-export default function ClassTimeSetupForm(){
-  const handleSubmit = (e: React.FormEvent)=>{ e.preventDefault(); alert('설정 저장(데모)'); };
+export default async function ClassTimeSetupForm({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }){
+  const sql = neon(process.env.DATABASE_URL!);
+  const rows = await selectClassTimeSettings(sql);
+
+  const getVal = (g: string, key: string): number => {
+    const r: any = rows.find(r => r.grade_name === g);
+    if (!r) return 0;
+    return Number(r[key] ?? 0);
+  };
+
+  const nameOf = (g: string, key: string) => `${g}:${key}`;
+
+  const sp = (searchParams ? await searchParams : undefined) as (Record<string, string | string[] | undefined> | undefined);
+  const showUpdated = (sp?.updated === '1');
 
   return (
     <div className={styles.container}>
       <header className={styles.header}><h1 className={styles.title}>과정별 수업 시간 설정</h1></header>
       <div className={styles.tableWrap}>
-        <form onSubmit={handleSubmit}>
+        <form action={saveClassTimeSettings}>
           <table className={styles.table}>
             <thead className={styles.thead}>
               <tr>
@@ -35,27 +47,28 @@ export default function ClassTimeSetupForm(){
               </tr>
             </thead>
             <tbody>
-              {grades.map((g, idx)=> (
+              {grades.map((g)=> (
                 <tr key={g}>
                   <td>{g}</td>
-                  <td><input className={styles.minInput} defaultValue={idx===0?35:idx===1?35:idx===2?35:25} /></td>
-                  <td><input className={styles.minInput} defaultValue={idx===0?25:idx===1?25:0} /></td>
-                  <td><input className={styles.minInput} defaultValue={idx===0?30:idx===1?30:idx===2?30:40} /></td>
-                  <td><input className={styles.minInput} defaultValue={idx===0?30:idx===1?30:idx===2?30:30} /></td>
-                  <td><input className={styles.minInput} defaultValue={idx===0?50:idx===1?50:idx===2?30:50} /></td>
-                  <td><input className={styles.minInput} defaultValue={idx===0?50:idx===1?50:idx===2?30:55} /></td>
+                  <td><input name={nameOf(g,'pt_piano')} className={styles.minInput} defaultValue={getVal(g,'pt_piano')} /></td>
+                  <td><input name={nameOf(g,'pt_theory')} className={styles.minInput} defaultValue={getVal(g,'pt_theory')} /></td>
+                  <td><input name={nameOf(g,'pd_piano')} className={styles.minInput} defaultValue={getVal(g,'pd_piano')} /></td>
+                  <td><input name={nameOf(g,'pd_drum')} className={styles.minInput} defaultValue={getVal(g,'pd_drum')} /></td>
+                  <td><input name={nameOf(g,'drum_only')} className={styles.minInput} defaultValue={getVal(g,'drum_only')} /></td>
+                  <td><input name={nameOf(g,'piano_only')} className={styles.minInput} defaultValue={getVal(g,'piano_only')} /></td>
                 </tr>
               ))}
             </tbody>
           </table>
           <div className={styles.btnBar}>
             <button type="submit" className={styles.btn}>설정</button>
-            <button type="button" className={`${styles.btn} ${styles.btnCancel}`} onClick={()=>history.back()}>취소</button>
+            <Link href="/" className={`${styles.btn} ${styles.btnCancel}`}>취소</Link>
           </div>
         </form>
       </div>
+      <Suspense fallback={null}>
+        <UpdatedAlert serverShow={showUpdated} />
+      </Suspense>
     </div>
   );
 }
-
-
