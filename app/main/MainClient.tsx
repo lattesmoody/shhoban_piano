@@ -217,7 +217,7 @@ export default function MainClient({ rows, kinderRows, drumRows }: Props) {
             <div className="flex flex-col space-y-4 xl:col-span-2">
               <WaitingList title="피아노 연습 대기" count={8} />
               <WaitingList title="유치부 연습 대기" count={5} color="bg-pink-500" />
-              <button className="px-4 py-6 text-2xl font-bold text-white bg-orange-500 rounded-lg hover:bg-orange-600">입실</button>
+              <button className="px-4 py-6 text-2xl font-bold text-white bg-orange-500 rounded-lg hover:bg-orange-600" onClick={onEntrance}>입실</button>
             </div>
           </div>
         </div>
@@ -280,6 +280,19 @@ function WaitingList({ title, count, color = 'bg-purple-600' }: { title: string;
       </div>
     </div>
   );
+}
+
+async function onEntrance() {
+  try {
+    const studentId = window.prompt('수강생 고유번호를 입력하세요!')?.trim();
+    if (!studentId) return;
+    const res = await fetch('/api/process-entrance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentId }) });
+    const text = await res.text();
+    alert(text || '처리되었습니다.');
+    if (res.ok) location.reload();
+  } catch (e) {
+    alert('처리 중 오류가 발생했습니다.');
+  }
 }
 
 
