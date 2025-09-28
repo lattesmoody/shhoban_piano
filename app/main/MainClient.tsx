@@ -19,7 +19,19 @@ export type PracticeRow = {
   usage_yn: number;
 };
 
-type Props = { rows: PracticeRow[] };
+export type KinderRow = {
+  room_no: number;
+  student_name: string | null;
+  student_id: string | null;
+  student_grade: number | null;
+  in_time: string | null;
+  out_time: string | null;
+  turns: number;
+  is_enabled: boolean;
+  usage_yn: number;
+};
+
+type Props = { rows: PracticeRow[]; kinderRows: KinderRow[] };
 
 // - 단일 방 카드 UI
 interface RoomCardProps { id: number; name: string | null; time: string | null; number: string; color?: string; }
@@ -37,16 +49,16 @@ const RoomCard = ({ id, name, time, number, color }: RoomCardProps ) => (
 );
 
 // - 유치부 카드 UI (목업)
-interface JuniorCardProps { id: number; color?: string; }
-const JuniorCard = ({ id, color }: JuniorCardProps) => (
+interface JuniorCardProps { id: number; color?: string; name?: string | null; time?: string | null; number?: string; }
+const JuniorCard = ({ id, color, name, time, number }: JuniorCardProps) => (
   <div className="flex flex-col bg-gray-100 border border-gray-400 rounded-md">
     <div className={`px-3 py-1 font-bold text-center text-black ${color || 'bg-gray-300'} rounded-t-md`}>유치부 {id}</div>
     <div className="flex flex-col items-center justify-center flex-grow p-2 space-y-2">
       <div className="flex flex-col items-center justify-center w-full h-16 p-1 bg-white border border-gray-300 rounded">
-        <p>&nbsp;</p>
-        <p>&nbsp;</p>
+        <p className="text-sm font-semibold md:text-base">{name || <>&nbsp;</>}</p>
+        <p className="text-xs text-gray-600 md:text-sm whitespace-nowrap">{time || <>&nbsp;</>}</p>
       </div>
-      <div className="flex items-center justify-center w-full h-16 text-4xl font-bold bg-white border border-gray-300 rounded">-</div>
+      <div className="flex items-center justify-center w-full h-16 text-4xl font-bold bg-white border border-gray-300 rounded">{number ?? '-'}</div>
     </div>
   </div>
 );
@@ -63,7 +75,7 @@ const DreamRoomTable = () => {
   );
 };
 
-export default function MainClient({ rows }: Props) {
+export default function MainClient({ rows, kinderRows }: Props) {
   // - 헤더 우측 현재시각 표시용 타이머
   const [currentTime, setCurrentTime] = useState('');
   useEffect(() => {
@@ -71,7 +83,10 @@ export default function MainClient({ rows }: Props) {
       const now = new Date();
       const days = ['일','월','화','수','목','금','토'];
       const dayName = days[now.getDay()];
-      const formattedTime = `${now.getFullYear()} - ${String(now.getMonth()+1).padStart(2,'0')} - ${String(now.getDate()).padStart(2,'0')} (${dayName}) ${String(now.getHours()).padStart(2,'0')} : ${String(now.getMinutes()).padStart(2,'0')}`;
+      const hour24 = now.getHours();
+      const hour12 = ((hour24 + 11) % 12) + 1; // 0→12, 13→1
+      const minute = String(now.getMinutes()).padStart(2,'0');
+      const formattedTime = `${now.getFullYear()} - ${String(now.getMonth()+1).padStart(2,'0')} - ${String(now.getDate()).padStart(2,'0')} (${dayName}) ${hour12}:${minute}`;
       setCurrentTime(formattedTime);
     }, 1000);
     return () => clearInterval(timer);
@@ -100,7 +115,17 @@ export default function MainClient({ rows }: Props) {
     return { id: roomNo, name, time, number, color };
   });
 
-  const juniorData = [ { id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 } ];
+  // - 유치부 데이터: DB 값으로 대체 (이름/시간/분침 포함)
+  const juniorData = Array.from({ length: 6 }, (_, idx) => {
+    const roomNo = idx + 1;
+    const r = kinderRows.find(k => k.room_no === roomNo);
+    const enabled = r ? r.is_enabled : false;
+    const displayName = r?.student_name ?? null;
+    const time = combineTime(r?.in_time, r?.out_time);
+    const number = r ? computeTurnsFromOutTime(r.out_time) || '-' : '-';
+    const color = !enabled ? 'bg-gray-400' : (roomNo % 2 === 1 ? 'bg-purple-500' : 'bg-sky-300');
+    return { id: roomNo, color, name: displayName, time, number };
+  });
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-200">
@@ -127,7 +152,7 @@ export default function MainClient({ rows }: Props) {
               </div>
               <div className="grid grid-cols-10 gap-0">
                 <div className="grid grid-cols-6 col-span-6 gap-0">
-                  {juniorData.map(jr => (<JuniorCard color={undefined} key={jr.id} {...jr} />))}
+                  {juniorData.map(jr => (<JuniorCard key={jr.id} {...jr} />))}
                 </div>
                 <div className="flex flex-col col-span-3 gap-0">
                   <div className="border border-gray-400 rounded-md">
