@@ -31,7 +31,19 @@ export type KinderRow = {
   usage_yn: number;
 };
 
-type Props = { rows: PracticeRow[]; kinderRows: KinderRow[] };
+export type DrumRow = {
+  room_no: number;
+  student_name: string | null;
+  student_id: string | null;
+  student_grade: number | null;
+  in_time: string | null;
+  out_time: string | null;
+  turns: number;
+  is_enabled: boolean;
+  usage_yn: number;
+};
+
+type Props = { rows: PracticeRow[]; kinderRows: KinderRow[]; drumRows: DrumRow[] };
 
 // - 단일 방 카드 UI
 interface RoomCardProps { id: number; name: string | null; time: string | null; number: string; color?: string; }
@@ -75,7 +87,35 @@ const DreamRoomTable = () => {
   );
 };
 
-export default function MainClient({ rows, kinderRows }: Props) {
+// - 드럼실 간이 표: 이름(학년)과 시간 4행 표시
+function DrumRoomCompact({ rows }: { rows: DrumRow[] }) {
+  const cols = 4;
+  const headers = Array.from({ length: cols }, (_, i) => rows[i] || null);
+  const bodyRows = 4; // 표 하단 4행
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="grid grid-cols-4 gap-1">
+        {headers.map((r, idx) => {
+          const name = r?.student_name || '';
+          const turns = r?.out_time ? computeTurnsFromOutTime(r.out_time) : '';
+          const turnText = turns && turns !== '-' ? `(${turns})` : '()';
+          return (
+            <div key={idx} className="flex items-center justify-center h-8 text-xs bg-white border border-gray-400 rounded">
+              <span className="truncate px-1">{name} {turnText}</span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="grid grid-cols-4 gap-1">
+        {Array.from({ length: bodyRows * cols }).map((_, i) => (
+          <div key={i} className="flex items-center justify-center h-8 text-xs bg-white border border-gray-400 rounded">()</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function MainClient({ rows, kinderRows, drumRows }: Props) {
   // - 헤더 우측 현재시각 표시용 타이머
   const [currentTime, setCurrentTime] = useState('');
   useEffect(() => {
@@ -157,7 +197,7 @@ export default function MainClient({ rows, kinderRows }: Props) {
                 <div className="flex flex-col col-span-3 gap-0">
                   <div className="border border-gray-400 rounded-md">
                     <div className="p-2 font-bold text-center text-white bg-blue-700 rounded-t-md">드럼실</div>
-                    <div className="p-2"><DreamRoomTable /></div>
+                    <div className="p-2"><DrumRoomCompact rows={drumRows} /></div>
                   </div>
                 </div>
                 <div className="flex items-end gap-2">

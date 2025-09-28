@@ -2,11 +2,13 @@
 import { neon } from '@neondatabase/serverless';
 import { selectPracticeStatusToday, PracticeRow } from '@/app/lib/sql/maps/practiceRoomQueries';
 import { selectKinderStatus, KinderRow } from '@/app/lib/sql/maps/kinderRoomQueries';
+import { selectDrumStatus, DrumRow } from '@/app/lib/sql/maps/drumRoomQueries';
 import MainClient from './MainClient';
 
 export default async function AdminPage() {
   const sql = neon(process.env.DATABASE_URL!);
   const rows: PracticeRow[] = await selectPracticeStatusToday(sql);
   const kinderRows: KinderRow[] = await selectKinderStatus(sql);
-  return <MainClient rows={rows} kinderRows={kinderRows} />;
+  const drumRows: DrumRow[] = await selectDrumStatus(sql);
+  return <MainClient rows={rows} kinderRows={kinderRows} drumRows={drumRows} />;
 }
