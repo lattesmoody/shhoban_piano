@@ -29,7 +29,7 @@ const RoomCard = ({ id, name, time, number, color }: RoomCardProps ) => (
     <div className="flex flex-col items-center justify-center flex-grow p-2 space-y-2">
       <div className="flex flex-col items-center justify-center w-full h-16 p-1 bg-white border border-gray-300 rounded">
         <p className="text-sm font-semibold md:text-base">{name || <>&nbsp;</>}</p>
-        <p className="text-xs text-gray-600 md:text-sm">{time || <>&nbsp;</>}</p>
+        <p className="text-xs text-gray-600 md:text-sm whitespace-nowrap">{time || <>&nbsp;</>}</p>
       </div>
       <div className="flex items-center justify-center w-full h-16 text-4xl font-bold bg-white border border-gray-300 rounded">{number}</div>
     </div>
@@ -91,7 +91,12 @@ export default function MainClient({ rows }: Props) {
     const name = r?.student_name ?? null;
     const time = combineTime(r?.in_time, r?.out_time);
     const number = r ? computeTurnsFromOutTime(r.out_time) || '-' : '-';
-    const color = name ? 'bg-green-300' : undefined;
+    // - 색상 규칙
+    //   · 비활성화: 회색
+    //   · 활성화: 홀수 방=초록, 짝수 방=노랑
+    const color = !r?.is_enabled
+      ? 'bg-gray-400'
+      : (roomNo % 2 === 1 ? 'bg-green-300' : 'bg-yellow-300');
     return { id: roomNo, name, time, number, color };
   });
 
@@ -115,16 +120,16 @@ export default function MainClient({ rows }: Props) {
       <main className="flex-grow p-4">
         <div className="container p-4 mx-auto bg-white shadow-lg" style={{ borderTop: '3px solid #F97316' }}>
           <div className="flex justify-end mb-2 text-sm font-semibold text-gray-700">{currentTime}</div>
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+          <div className="grid grid-cols-1 gap-0 xl:grid-cols-12">
             <div className="xl:col-span-10">
-              <div className="grid grid-cols-2 gap-3 mb-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-10">
+              <div className="grid grid-cols-2 gap-0 mb-0 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-10">
                 {roomData.map(room => (<RoomCard key={room.id} {...room} />))}
               </div>
-              <div className="grid grid-cols-10 gap-3">
-                <div className="grid grid-cols-6 col-span-6 gap-3">
+              <div className="grid grid-cols-10 gap-0">
+                <div className="grid grid-cols-6 col-span-6 gap-0">
                   {juniorData.map(jr => (<JuniorCard color={undefined} key={jr.id} {...jr} />))}
                 </div>
-                <div className="flex flex-col col-span-3 gap-2">
+                <div className="flex flex-col col-span-3 gap-0">
                   <div className="border border-gray-400 rounded-md">
                     <div className="p-2 font-bold text-center text-white bg-blue-700 rounded-t-md">드럼실</div>
                     <div className="p-2"><DreamRoomTable /></div>
@@ -171,9 +176,9 @@ function formatTimeCell(value: unknown): string {
   try {
     const d = value instanceof Date ? value : new Date(String(value));
     if (Number.isNaN(d.getTime())) return '';
-    const hh = String(d.getHours()).padStart(2, '0');
+    const hh = String(d.getHours());
     const mm = String(d.getMinutes()).padStart(2, '0');
-    return `${hh} : ${mm}`;
+    return `${hh}:${mm}`;
   } catch {
     return '';
   }
