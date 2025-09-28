@@ -46,3 +46,19 @@ export async function deleteStudentById(sql: any, studentId: string): Promise<vo
   await (sql as any).query(envSql, [studentId]);
 }
 
+// 학생 단건 조회 (학생 수정 페이지 등에서 사용)
+export async function selectStudentById(sql: any, studentId: string): Promise<StudentRow | null> {
+  const envSqlRaw = process.env.SELECT_STUDENT_BY_ID_FOR_UPDATE_SQL || process.env.SELECT_STUDENT_BY_ID_SQL;
+  const envSql = normalizePlaceholders(envSqlRaw);
+  if (!envSql) {
+    throw new Error('SELECT_STUDENT_BY_ID_FOR_UPDATE_SQL 환경변수가 설정되지 않았습니다.');
+  }
+  const result = await (sql as any).query(envSql, [studentId]);
+  const rows: any[] = Array.isArray(result)
+    ? result
+    : (result && (result as any).rows && Array.isArray((result as any).rows) ? (result as any).rows : []);
+  if (!rows || rows.length === 0) return null;
+  const r = rows[0];
+  return r as StudentRow;
+}
+
