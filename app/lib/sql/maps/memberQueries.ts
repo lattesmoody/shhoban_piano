@@ -1,5 +1,10 @@
 // 로컬 전용 SQL 매핑 레이어
-require('dotenv').config({ path: './.env.development.local' }); 
+try {
+  if (typeof require !== 'undefined') {
+    // Next.js 런타임에서는 이미 env가 주입되므로, Node 환경에서만 로드
+    require('dotenv').config({ path: './.env.development.local' });
+  }
+} catch {}
 
 function normalizePlaceholders(raw: string | undefined): string {
   const input = (raw || '').trim();

@@ -16,7 +16,8 @@ const CreateStudentSchema = z.object({
   }),
   member: z.string().min(1),
   course: z.union([z.string(), z.number()]).transform((v) => Number(v) || 0),
-  vehicle: z.any().optional().transform((v) => (v === 'on' || v === true ? true : false)),
+  vehicle: z.any().optional().transform((v) => (v === 'O' || v === true ? true : false)),
+  special_notes: z.string().optional().default(''),
 });
 
 export async function createStudent(prevState: string | undefined, formData: FormData) {
@@ -25,7 +26,7 @@ export async function createStudent(prevState: string | undefined, formData: For
     return parsed.error.issues.map((e) => e.message).join(', ');
   }
 
-  const { name, uniqueId, school, grade, member, course, vehicle } = parsed.data;
+  const { name, uniqueId, school, grade, member, course, vehicle, special_notes } = parsed.data;
 
   const envSql = process.env.INSERT_STUDENT_SQL;
   if (!envSql || envSql.trim().length === 0) {
@@ -34,7 +35,6 @@ export async function createStudent(prevState: string | undefined, formData: For
 
   try {
     const sql = neon(process.env.DATABASE_URL!);
-    // students(student_name, student_id, student_school, student_grade, member_id, course_code, vehicle_yn)
     await (sql as any).query(envSql, [
       name,
       String(uniqueId),
@@ -43,6 +43,7 @@ export async function createStudent(prevState: string | undefined, formData: For
       member,
       Number(course),
       Boolean(vehicle),
+      String(special_notes || ''),
     ]);
   } catch (e) {
     if (e instanceof Error) {
