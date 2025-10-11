@@ -17,7 +17,7 @@ const CourseBlock = ({ index, details, onDetailsChange }: {
   details: CourseDetail;
   onDetailsChange: (index: number, field: keyof CourseDetail, value: string) => void;
 }) => {
-  const daysOfWeek = ['월요일', '화요일', '수요일', '목요일', '금요일'];
+  const daysOfWeek = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'];
   const lessons = ['피아노+이론', '피아노+드럼', '드럼', '피아노'];
 
   return (
@@ -67,7 +67,7 @@ export default function StudentCourseUpdatePage() {
   // - 가져온 파라미터(문자열)를 숫자(courseCount)로 변환
   let courseCount = parseInt(courseTypeParam, 10);
   if (Number.isNaN(courseCount) || courseCount < 2) courseCount = 2;
-  if (courseCount > 5) courseCount = 5;
+  if (courseCount > 7) courseCount = 7;
   // - 화면에 표시할 제목용 문자열 생성 (예: "5일 반")
   const courseTypeDisplay = `${courseCount}일 반`;
 
@@ -76,7 +76,7 @@ export default function StudentCourseUpdatePage() {
 
   // - 페이지 로드 시 `courseCount`에 맞춰 폼 상태 초기화
   useEffect(() => {
-    const weekdays = ['월요일', '화요일', '수요일', '목요일', '금요일'];
+    const weekdays = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'];
     (async () => {
       try {
         const saved = await loadStudentCourses(studentUniqueId);
@@ -114,7 +114,7 @@ export default function StudentCourseUpdatePage() {
     setFormState(updatedState);
   };
 
-  const viewCount = courseCount === 5 ? 5 : Math.min(courseCount, 4);
+  const viewCount = courseCount === 5 ? 5 : courseCount === 6 ? 6 : courseCount === 7 ? 7 : Math.min(courseCount, 4);
 
   // - 제출 시 유효성 검사: 과정(레슨) 필수 선택 + 요일 중복 금지(월~금 범위)
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {

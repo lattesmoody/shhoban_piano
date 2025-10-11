@@ -74,6 +74,8 @@ export default async function StudentUpdateForm({ params }: { params: Promise<{ 
             <option value="3">3일 반</option>
             <option value="4">4일 반</option>
             <option value="5">5일 반</option>
+            <option value="6">6일 반</option>
+            <option value="7">7일 반</option>
           </select>
         </div>
         <div className={styles.formGroup}>
