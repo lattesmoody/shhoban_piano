@@ -37,9 +37,20 @@ export async function processEntrance(studentId: string): Promise<string> {
     const lessonCode: number = Number(course.lesson_code);
     const now = new Date();
 
-    // 3) 방 배정: 레슨에 따라 테이블 결정 (1:피아노+이론,2:피아노+드럼,3:드럼,4:피아노)
-    //    ENV에 정의된 쿼리 사용 (노출 방지)
+    // 3) 중복 입실 체크: 이미 입실한 학생인지 확인
     const isDrum = lessonCode === 3;
+    const checkEntranceSqlRaw = isDrum
+      ? process.env.DRUM_CHECK_STUDENT_ENTRANCE_SQL
+      : process.env.PRACTICE_CHECK_STUDENT_ENTRANCE_SQL;
+    const checkEntranceSql = normalizePlaceholderForEnv(checkEntranceSqlRaw);
+    if (checkEntranceSql) {
+      const entranceRes: any = await (sql as any).query(checkEntranceSql, [studentId]);
+      const alreadyEntered = Array.isArray(entranceRes) ? entranceRes[0] : (entranceRes?.rows?.[0] ?? null);
+      if (alreadyEntered) return '이미 수강 중인 학생입니다.';
+    }
+
+    // 4) 방 배정: 레슨에 따라 테이블 결정 (1:피아노+이론,2:피아노+드럼,3:드럼,4:피아노)
+    //    ENV에 정의된 쿼리 사용 (노출 방지)
     const findEmptySqlRaw = isDrum
       ? process.env.DRUM_FIND_EMPTY_ROOM_SQL
       : process.env.PRACTICE_FIND_EMPTY_ROOM_SQL;
@@ -56,7 +67,7 @@ export async function processEntrance(studentId: string): Promise<string> {
     if (!updSql) return isDrum ? '[환경설정 누락] DRUM_UPDATE_ENTRANCE_SQL' : '[환경설정 누락] PRACTICE_UPDATE_ENTRANCE_SQL';
     await (sql as any).query(updSql, [studentId, student.student_name, now.toISOString(), room.room_no]);
 
-    // 4) 메시지 구성
+    // 5) 메시지 구성
     const lessonNameMap: Record<number,string> = {1:'피아노+이론',2:'피아노+드럼',3:'드럼',4:'피아노'};
     const lessonName = lessonNameMap[lessonCode] || '수업';
     return `${student.student_name}님 반갑습니다. 오늘의 학습은 "${lessonName}" 입니다.`;
