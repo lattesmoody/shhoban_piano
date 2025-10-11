@@ -202,7 +202,7 @@ export default function MainClient({ rows, kinderRows, drumRows }: Props) {
                 </div>
                 <div className="flex items-end gap-2">
                   <div className="flex-grow text-xs border border-gray-400 rounded-md">
-                    <div className="p-2 font-bold bg-gray-200 border-b border-gray-400 rounded-t-md">&lt;학습 과정 포함&gt;</div>
+                    <div className="p-2 font-bold bg-gray-200 border-b border-gray-400 rounded-t-md">&lt;학습 과정 모형&gt;</div>
                     <ul className="p-2 space-y-1">
                       <li>⚫ : 피아노+이론</li>
                       <li>◆ : 피아노+드럼</li>
