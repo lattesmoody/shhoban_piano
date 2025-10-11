@@ -2,6 +2,7 @@ import React from 'react';
 import styles from './page.module.css';
 import { neon } from '@neondatabase/serverless';
 import { selectStudentById, StudentRow } from '@/app/lib/sql/maps/studentQueries';
+import { selectAllMembers, MemberListRow } from '@/app/lib/sql/maps/memberQueries';
 import Link from 'next/link';
 import { updateStudent } from './actions';
 
@@ -24,12 +25,16 @@ const FormSkeleton = () => (
     </div>
 );
 
-export default async function StudentUpdateForm({ params }: { params: { id: string } }) {
+export default async function StudentUpdateForm({ params }: { params: Promise<{ id: string }> }) {
   const sql = neon(process.env.DATABASE_URL!);
-  const row: StudentRow | null = await selectStudentById(sql, params.id);
+  const { id } = await params;
+  const row: StudentRow | null = await selectStudentById(sql, id);
+  const members: MemberListRow[] = await selectAllMembers(sql);
+  
   if (!row) {
     return <div style={{ padding: '2rem' }}>해당 학생 정보를 찾을 수 없습니다.</div>;
   }
+  
   const formData: FormData = {
     name: row.student_name,
     uniqueId: row.student_id,
@@ -49,7 +54,19 @@ export default async function StudentUpdateForm({ params }: { params: { id: stri
         <div className={styles.formGroup}><label className={styles.label}>고유번호</label><input className={`${styles.input} ${styles.readOnlyInput}`} name="uniqueId" defaultValue={formData.uniqueId} readOnly/></div>
         <div className={styles.formGroup}><label className={styles.label}>학교명</label><input className={styles.input} name="schoolName" defaultValue={formData.schoolName}/></div>
         <div className={styles.formGroup}><label className={styles.label}>학년</label><input className={styles.input} name="grade" defaultValue={formData.grade}/></div>
-        <div className={styles.formGroup}><label className={styles.label}>담당강사</label><input className={styles.input} name="instructor" defaultValue={formData.instructor}/></div>
+        <div className={styles.formGroup}>
+          <label className={styles.label}>담당강사</label>
+          <select className={styles.input} name="instructor" defaultValue={formData.instructor}>
+            {members
+              .filter(m => m.member_code !== 99 && m.member_code !== 0)
+              .map(member => (
+                <option key={member.member_id} value={member.member_id}>
+                  {member.member_code} - {member.member_name}
+                </option>
+              ))
+            }
+          </select>
+        </div>
         <div className={styles.formGroup}>
           <label className={styles.label}>과정구분</label>
           <select className={styles.input} name="courseType" defaultValue={String(formData.courseType)}>
