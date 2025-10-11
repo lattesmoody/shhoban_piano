@@ -53,7 +53,21 @@ export default async function StudentUpdateForm({ params }: { params: Promise<{ 
         <div className={styles.formGroup}><label className={styles.label}>이름</label><input className={`${styles.input} ${styles.readOnlyInput}`} name="name" defaultValue={formData.name} readOnly/></div>
         <div className={styles.formGroup}><label className={styles.label}>고유번호</label><input className={`${styles.input} ${styles.readOnlyInput}`} name="uniqueId" defaultValue={formData.uniqueId} readOnly/></div>
         <div className={styles.formGroup}><label className={styles.label}>학교명</label><input className={styles.input} name="schoolName" defaultValue={formData.schoolName}/></div>
-        <div className={styles.formGroup}><label className={styles.label}>학년</label><input className={styles.input} name="grade" defaultValue={formData.grade}/></div>
+        <div className={styles.formGroup}>
+          <label className={styles.label}>학년</label>
+          <select className={styles.input} name="grade" defaultValue={formData.grade}>
+            <option value="1">1학년</option>
+            <option value="2">2학년</option>
+            <option value="3">3학년</option>
+            <option value="4">4학년</option>
+            <option value="5">5학년</option>
+            <option value="6">6학년</option>
+            <option value="중·고등부">중·고등부</option>
+            <option value="대회부">대회부</option>
+            <option value="연주회부">연주회부</option>
+            <option value="성인부">성인부</option>
+          </select>
+        </div>
         <div className={styles.formGroup}>
           <label className={styles.label}>담당강사</label>
           <select className={styles.input} name="instructor" defaultValue={formData.instructor}>
