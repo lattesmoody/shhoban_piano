@@ -50,8 +50,22 @@ export default async function StudentUpdateForm({ params }: { params: { id: stri
         <div className={styles.formGroup}><label className={styles.label}>학교명</label><input className={styles.input} name="schoolName" defaultValue={formData.schoolName}/></div>
         <div className={styles.formGroup}><label className={styles.label}>학년</label><input className={styles.input} name="grade" defaultValue={formData.grade}/></div>
         <div className={styles.formGroup}><label className={styles.label}>담당강사</label><input className={styles.input} name="instructor" defaultValue={formData.instructor}/></div>
-        <div className={styles.formGroup}><label className={styles.label}>과정구분</label><input className={styles.input} name="courseType" defaultValue={String(formData.courseType)}/></div>
-        <div className={styles.formGroup}><label className={styles.label}>차량탑승</label><input className={styles.input} name="useVehicle" defaultValue={formData.useVehicle}/></div>
+        <div className={styles.formGroup}>
+          <label className={styles.label}>과정구분</label>
+          <select className={styles.input} name="courseType" defaultValue={String(formData.courseType)}>
+            <option value="2">2일 반</option>
+            <option value="3">3일 반</option>
+            <option value="4">4일 반</option>
+            <option value="5">5일 반</option>
+          </select>
+        </div>
+        <div className={styles.formGroup}>
+          <label className={styles.label}>차량탑승</label>
+          <select className={styles.input} name="useVehicle" defaultValue={formData.useVehicle}>
+            <option value="O">O</option>
+            <option value="X">X</option>
+          </select>
+        </div>
         <div className={styles.formGroup}><label className={styles.label}>특이사항</label><textarea className={styles.textarea} name="notes" defaultValue={formData.notes}/></div>
         <div className={styles.buttonGroup}>
           <button type="submit" className={styles.submitButton}>수정</button>
