@@ -8,7 +8,7 @@ import { upsertClassTimeSetting, ClassTimeSetting } from '../lib/sql/maps/classT
 export async function saveClassTimeSettings(formData: FormData): Promise<void> {
   const sql = neon(process.env.DATABASE_URL!);
 
-  const grades = ['유치부','초등부','중고등부','대학부','연주회부'];
+  const grades = ['유치부','초등부','중고등부','대회부','연주회부'];
   for (const g of grades) {
     const getNum = (name: string) => Number(formData.get(`${g}:${name}`) || 0);
     const setting: ClassTimeSetting = {
