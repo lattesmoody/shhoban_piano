@@ -9,28 +9,43 @@ import DeleteButton from './DeleteButton';
 
 // 학년 데이터를 포맷팅하는 함수
 function formatGrade(grade: number | string | null): string {
-  if (!grade) return '-';
+  if (grade === null || grade === undefined) return '-';
   
-  // 문자열인 경우 (새로운 학년 형식)
+  // 문자열인 경우 - 이미 포맷된 학년명이거나 숫자 문자열일 수 있음
   if (typeof grade === 'string') {
-    return grade;
+    // 이미 포맷된 학년명인 경우 그대로 반환
+    if (['유치부', '초등부', '중·고등부', '대회부', '연주회부', '신입생', '기타'].includes(grade)) {
+      return grade;
+    }
+    // 숫자 문자열인 경우 숫자로 변환하여 처리
+    const numGrade = parseInt(grade, 10);
+    if (!isNaN(numGrade)) {
+      return formatGradeByNumber(numGrade);
+    }
+    return grade; // 알 수 없는 문자열은 그대로 반환
   }
   
-  // 숫자인 경우 (코드 기반 학년 형식)
+  // 숫자인 경우
   if (typeof grade === 'number') {
-    switch (grade) {
-      case 1: return '유치부';
-      case 2: return '초등부';
-      case 3: return '중·고등부';
-      case 4: return '대회부';
-      case 5: return '연주회부';
-      case 6: return '신입생';
-      case 7: return '기타';
-      default: return '-';
-    }
+    return formatGradeByNumber(grade);
   }
   
   return '-';
+}
+
+// 숫자 학년 코드를 학년명으로 변환하는 함수
+function formatGradeByNumber(grade: number): string {
+  switch (grade) {
+    case 1: return '유치부';
+    case 2: return '초등부';
+    case 3: return '중·고등부';
+    case 4: return '대회부';
+    case 5: return '연주회부';
+    case 6: return '신입생';
+    case 7: return '기타';
+    case 0: return '-';
+    default: return `${grade}학년`; // 기존 1-6학년 데이터 호환성
+  }
 }
 
 export default async function StudentManagementPage() {

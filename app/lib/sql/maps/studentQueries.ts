@@ -15,7 +15,7 @@ export type StudentRow = {
   student_name: string;
   student_id: string;
   student_school: string | null;
-  student_grade: number | null;
+  student_grade: number | string | null;
   member_id: string | null;
   member_name: string | null; // COALESCE 별칭
   course_code: number | null;
