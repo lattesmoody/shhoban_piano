@@ -43,7 +43,16 @@ export type DrumRow = {
   usage_yn: number;
 };
 
-type Props = { rows: PracticeRow[]; kinderRows: KinderRow[]; drumRows: DrumRow[] };
+import { ClassTimeSetting } from '@/app/lib/sql/maps/classTimeQueries';
+import { StudentCourseInfo } from './page';
+
+type Props = { 
+  rows: PracticeRow[]; 
+  kinderRows: KinderRow[]; 
+  drumRows: DrumRow[];
+  classTimeSettings: ClassTimeSetting[];
+  studentCourseInfos: StudentCourseInfo[];
+};
 
 // - 단일 방 카드 UI
 interface RoomCardProps { id: number; name: string | null; time: string | null; number: string; color?: string; }
@@ -87,8 +96,16 @@ const DreamRoomTable = () => {
   );
 };
 
-// - 드럼실 간이 표: 이름(학년)과 시간 4행 표시
-function DrumRoomCompact({ rows }: { rows: DrumRow[] }) {
+// - 드럼실 간이 표: 이름(학년)과 시간 4행 표시 (학생별 수업 시간 적용)
+function DrumRoomCompact({ 
+  rows, 
+  classTimeSettings, 
+  studentCourseInfos 
+}: { 
+  rows: DrumRow[];
+  classTimeSettings: ClassTimeSetting[];
+  studentCourseInfos: StudentCourseInfo[];
+}) {
   const cols = 4;
   const headers = Array.from({ length: cols }, (_, i) => rows[i] || null);
   const bodyRows = 4; // 표 하단 4행
@@ -97,7 +114,30 @@ function DrumRoomCompact({ rows }: { rows: DrumRow[] }) {
       <div className="grid grid-cols-4 gap-1">
         {headers.map((r, idx) => {
           const name = r?.student_name || '';
-          const turns = r?.out_time ? computeTurnsFromOutTime(r.out_time) : '';
+          
+          // 계산된 퇴실 시간을 기준으로 분침 계산 (학생별 수업 시간 적용)
+          let turns = '';
+          if (r?.in_time && r?.student_id) {
+            try {
+              const inDate = new Date(String(r.in_time));
+              if (!Number.isNaN(inDate.getTime())) {
+                const normalizedInTime = normalizeInTime(inDate);
+                
+                // 학생별 수업 시간 계산
+                const studentInfo = studentCourseInfos.find(info => info.student_id === r.student_id);
+                let classDuration = 35; // 기본값
+                if (studentInfo) {
+                  classDuration = getStudentClassDuration(r.student_id, studentInfo.lesson_code, classTimeSettings, studentCourseInfos);
+                }
+                
+                const calculatedOutTime = new Date(normalizedInTime.getTime() + classDuration * 60 * 1000);
+                turns = computeTurnsFromOutTime(calculatedOutTime) || '';
+              }
+            } catch {
+              turns = '';
+            }
+          }
+          
           const turnText = turns && turns !== '-' ? `(${turns})` : '()';
           return (
             <div key={idx} className="flex items-center justify-center h-8 text-xs bg-white border border-gray-400 rounded">
@@ -115,7 +155,7 @@ function DrumRoomCompact({ rows }: { rows: DrumRow[] }) {
   );
 }
 
-export default function MainClient({ rows, kinderRows, drumRows }: Props) {
+export default function MainClient({ rows, kinderRows, drumRows, classTimeSettings, studentCourseInfos }: Props) {
   // - 헤더 우측 현재시각 표시용 타이머
   const [currentTime, setCurrentTime] = useState('');
   useEffect(() => {
@@ -138,14 +178,37 @@ export default function MainClient({ rows, kinderRows, drumRows }: Props) {
 
   // - 1~20호실 데이터를 UI 카드 모델로 변환
   //   · name 존재 시 초록 배경
-  //   · time: 입/퇴실 합성
+  //   · time: 입/퇴실 합성 (학생별 수업 시간 적용)
   //   · number: 분침(5분 단위) 계산 결과 또는 '-'
   const roomData = Array.from({ length: 20 }, (_, idx) => {
     const roomNo = idx + 1;
     const r = byRoom.get(roomNo);
     const name = r?.student_name ?? null;
-    const time = combineTime(r?.in_time, r?.out_time);
-    const number = r ? computeTurnsFromOutTime(r.out_time) || '-' : '-';
+    const time = combineTime(r?.in_time, r?.out_time, r?.student_id, classTimeSettings, studentCourseInfos);
+    
+    // 계산된 퇴실 시간을 기준으로 분침 계산 (학생별 수업 시간 적용)
+    let number = '-';
+    if (r?.in_time && r?.student_id) {
+      try {
+        const inDate = new Date(String(r.in_time));
+        if (!Number.isNaN(inDate.getTime())) {
+          const normalizedInTime = normalizeInTime(inDate);
+          
+          // 학생별 수업 시간 계산
+          const studentInfo = studentCourseInfos.find(info => info.student_id === r.student_id);
+          let classDuration = 35; // 기본값
+          if (studentInfo) {
+            classDuration = getStudentClassDuration(r.student_id, studentInfo.lesson_code, classTimeSettings, studentCourseInfos);
+          }
+          
+          const calculatedOutTime = new Date(normalizedInTime.getTime() + classDuration * 60 * 1000);
+          number = computeTurnsFromOutTime(calculatedOutTime) || '-';
+        }
+      } catch {
+        number = '-';
+      }
+    }
+    
     // - 색상 규칙
     //   · 비활성화: 회색
     //   · 활성화: 홀수 방=초록, 짝수 방=노랑
@@ -155,14 +218,37 @@ export default function MainClient({ rows, kinderRows, drumRows }: Props) {
     return { id: roomNo, name, time, number, color };
   });
 
-  // - 유치부 데이터: DB 값으로 대체 (이름/시간/분침 포함)
+  // - 유치부 데이터: DB 값으로 대체 (이름/시간/분침 포함, 학생별 수업 시간 적용)
   const juniorData = Array.from({ length: 6 }, (_, idx) => {
     const roomNo = idx + 1;
     const r = kinderRows.find(k => k.room_no === roomNo);
     const enabled = r ? r.is_enabled : false;
     const displayName = r?.student_name ?? null;
-    const time = combineTime(r?.in_time, r?.out_time);
-    const number = r ? computeTurnsFromOutTime(r.out_time) || '-' : '-';
+    const time = combineTime(r?.in_time, r?.out_time, r?.student_id, classTimeSettings, studentCourseInfos);
+    
+    // 계산된 퇴실 시간을 기준으로 분침 계산 (학생별 수업 시간 적용)
+    let number = '-';
+    if (r?.in_time && r?.student_id) {
+      try {
+        const inDate = new Date(String(r.in_time));
+        if (!Number.isNaN(inDate.getTime())) {
+          const normalizedInTime = normalizeInTime(inDate);
+          
+          // 학생별 수업 시간 계산
+          const studentInfo = studentCourseInfos.find(info => info.student_id === r.student_id);
+          let classDuration = 35; // 기본값
+          if (studentInfo) {
+            classDuration = getStudentClassDuration(r.student_id, studentInfo.lesson_code, classTimeSettings, studentCourseInfos);
+          }
+          
+          const calculatedOutTime = new Date(normalizedInTime.getTime() + classDuration * 60 * 1000);
+          number = computeTurnsFromOutTime(calculatedOutTime) || '-';
+        }
+      } catch {
+        number = '-';
+      }
+    }
+    
     const color = !enabled ? 'bg-gray-400' : (roomNo % 2 === 1 ? 'bg-purple-500' : 'bg-sky-300');
     return { id: roomNo, color, name: displayName, time, number };
   });
@@ -197,7 +283,7 @@ export default function MainClient({ rows, kinderRows, drumRows }: Props) {
                 <div className="flex flex-col col-span-3 gap-0">
                   <div className="border border-gray-400 rounded-md">
                     <div className="p-2 font-bold text-center text-white bg-blue-700 rounded-t-md">드럼실</div>
-                    <div className="p-2"><DrumRoomCompact rows={drumRows} /></div>
+                    <div className="p-2"><DrumRoomCompact rows={drumRows} classTimeSettings={classTimeSettings} studentCourseInfos={studentCourseInfos} /></div>
                   </div>
                 </div>
                 <div className="flex items-end gap-2">
@@ -226,16 +312,116 @@ export default function MainClient({ rows, kinderRows, drumRows }: Props) {
   );
 }
 
-// - 입/퇴실 시간을 "HH : mm ~ HH : mm" 형태로 합성
-function combineTime(inTime?: string | null, outTime?: string | null): string | null {
-  const a = formatTimeCell(inTime);
-  const b = formatTimeCell(outTime);
-  if (!a && !b) return null;
-  if (a && b) return `${a} ~ ${b}`;
-  return a || b;
+// - 학생별 과정 정보에 따른 수업 시간 계산
+function getStudentClassDuration(
+  studentId: string, 
+  lessonCode: number, 
+  classTimeSettings: ClassTimeSetting[], 
+  studentCourseInfos: StudentCourseInfo[]
+): number {
+  // 학생의 과정 정보 찾기
+  const studentInfo = studentCourseInfos.find(info => info.student_id === studentId);
+  if (!studentInfo) return 35; // 기본값 35분
+  
+  // 해당 학년의 수업 시간 설정 찾기
+  const timeSetting = classTimeSettings.find(setting => setting.grade_name === studentInfo.grade_name);
+  if (!timeSetting) return 35; // 기본값 35분
+  
+  // 과정 코드에 따른 수업 시간 반환
+  switch (lessonCode) {
+    case 1: // 피아노+이론
+      return timeSetting.pt_piano || 35;
+    case 2: // 피아노+드럼
+      return timeSetting.pd_piano || 35;
+    case 3: // 드럼
+      return timeSetting.drum_only || 35;
+    case 4: // 피아노
+      return timeSetting.piano_only || 35;
+    default:
+      return 35;
+  }
 }
 
-// - Date/문자 입력을 "HH : mm"로 포맷
+// - 입실 시간을 기준으로 학생별 수업 시간을 계산하여 "HH:mm ~ HH:mm" 형태로 표시
+function combineTime(
+  inTime?: string | null, 
+  outTime?: string | null, 
+  studentId?: string | null,
+  classTimeSettings?: ClassTimeSetting[], 
+  studentCourseInfos?: StudentCourseInfo[]
+): string | null {
+  if (!inTime) return null;
+  
+  try {
+    const inDate = new Date(String(inTime));
+    if (Number.isNaN(inDate.getTime())) return null;
+    
+    // 입실 시간을 정규화
+    const normalizedInTime = normalizeInTime(inDate);
+    
+    // 학생별 수업 시간 계산 (기본값 35분)
+    let classDuration = 35;
+    if (studentId && classTimeSettings && studentCourseInfos) {
+      const studentInfo = studentCourseInfos.find(info => info.student_id === studentId);
+      if (studentInfo) {
+        classDuration = getStudentClassDuration(studentId, studentInfo.lesson_code, classTimeSettings, studentCourseInfos);
+      }
+    }
+    
+    // 수업 시간만큼 더해서 퇴실 시간 계산
+    const outDate = new Date(normalizedInTime.getTime() + classDuration * 60 * 1000);
+    
+    const inTimeStr = formatTimeCell(normalizedInTime);
+    const outTimeStr = formatTimeCell(outDate);
+    
+    return `${inTimeStr} ~ ${outTimeStr}`;
+  } catch {
+    return null;
+  }
+}
+
+// - 입실 시간 정규화 함수
+function normalizeInTime(inDate: Date): Date {
+  const minute = inDate.getMinutes();
+  const normalized = new Date(inDate);
+  
+  let normalizedMinute: number;
+  
+  if (minute >= 0 && minute <= 2) {
+    normalizedMinute = 0;
+  } else if (minute >= 3 && minute <= 7) {
+    normalizedMinute = 5;
+  } else if (minute >= 8 && minute <= 12) {
+    normalizedMinute = 10;
+  } else if (minute >= 13 && minute <= 17) {
+    normalizedMinute = 15;
+  } else if (minute >= 18 && minute <= 22) {
+    normalizedMinute = 20;
+  } else if (minute >= 23 && minute <= 27) {
+    normalizedMinute = 25;
+  } else if (minute >= 28 && minute <= 32) {
+    normalizedMinute = 30;
+  } else if (minute >= 33 && minute <= 37) {
+    normalizedMinute = 35;
+  } else if (minute >= 38 && minute <= 42) {
+    normalizedMinute = 40;
+  } else if (minute >= 43 && minute <= 47) {
+    normalizedMinute = 45;
+  } else if (minute >= 48 && minute <= 52) {
+    normalizedMinute = 50;
+  } else if (minute >= 53 && minute <= 57) {
+    normalizedMinute = 55;
+  } else { // 58분 ~ 59분
+    // 다음 시간의 00분으로 간주
+    normalized.setHours(normalized.getHours() + 1);
+    normalizedMinute = 0;
+  }
+  
+  normalized.setMinutes(normalizedMinute, 0, 0);
+  return normalized;
+}
+
+// - Date/문자 입력을 "HH:mm"로 포맷 (시간 앞의 0 제거)
 function formatTimeCell(value: unknown): string {
   if (!value) return '';
   try {
