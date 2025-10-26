@@ -17,7 +17,7 @@ export default function ClientForm({ members }: Props) {
     name: '',
     uniqueId: '',
     school: '',
-    grade: 1,
+    grade: 2, // 기본값을 초등부(2)로 변경
     member: teacherOptions[0]?.member_id || '',
     course: 5,
     vehicle: 'O',
