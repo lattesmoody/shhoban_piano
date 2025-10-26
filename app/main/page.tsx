@@ -51,17 +51,18 @@ export default async function AdminPage() {
               const course = Array.isArray(courseRes) ? courseRes[0] : (courseRes?.rows?.[0] ?? null);
               
               if (course) {
-                // 학년에 따른 grade_name 매핑
+                // 학년 코드에 따른 grade_name 매핑
                 let gradeName = '초등부'; // 기본값
                 if (student.student_grade) {
-                  if (student.student_grade <= 6) {
-                    gradeName = '유치부';
-                  } else if (student.student_grade <= 12) {
-                    gradeName = '초등부';
-                  } else if (student.student_grade <= 18) {
-                    gradeName = '중고등부';
-                  } else {
-                    gradeName = '대회부';
+                  switch (student.student_grade) {
+                    case 1: gradeName = '유치부'; break;
+                    case 2: gradeName = '초등부'; break;
+                    case 3: gradeName = '중고등부'; break;
+                    case 4: gradeName = '대회부'; break;
+                    case 5: gradeName = '연주회부'; break;
+                    case 6: gradeName = '신입생'; break;
+                    case 7: gradeName = '기타'; break;
+                    default: gradeName = '초등부'; break;
                   }
                 }
                 

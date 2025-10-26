@@ -70,16 +70,13 @@ export default function ClientForm({ members }: Props) {
         <div className={styles.formGroup}>
           <label htmlFor="grade" className={styles.label}>학년</label>
           <select id="grade" name="grade" value={formData.grade} onChange={handleChange} className={styles.select}>
-            <option value={1}>1학년</option>
-            <option value={2}>2학년</option>
-            <option value={3}>3학년</option>
-            <option value={4}>4학년</option>
-            <option value={5}>5학년</option>
-            <option value={6}>6학년</option>
-            <option value="중·고등부">중·고등부</option>
-            <option value="대회부">대회부</option>
-            <option value="연주회부">연주회부</option>
-            <option value="성인부">성인부</option>
+            <option value={1}>유치부</option>
+            <option value={2}>초등부</option>
+            <option value={3}>중·고등부</option>
+            <option value={4}>대회부</option>
+            <option value={5}>연주회부</option>
+            <option value={6}>신입생</option>
+            <option value={7}>기타</option>
           </select>
         </div>
         <div className={styles.formGroup}>

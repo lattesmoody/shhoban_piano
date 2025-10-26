@@ -7,6 +7,32 @@ import { selectActiveStudents, StudentRow } from '@/app/lib/sql/maps/studentQuer
 import { deleteStudent } from './actions';
 import DeleteButton from './DeleteButton';
 
+// 학년 데이터를 포맷팅하는 함수
+function formatGrade(grade: number | string | null): string {
+  if (!grade) return '-';
+  
+  // 문자열인 경우 (새로운 학년 형식)
+  if (typeof grade === 'string') {
+    return grade;
+  }
+  
+  // 숫자인 경우 (코드 기반 학년 형식)
+  if (typeof grade === 'number') {
+    switch (grade) {
+      case 1: return '유치부';
+      case 2: return '초등부';
+      case 3: return '중·고등부';
+      case 4: return '대회부';
+      case 5: return '연주회부';
+      case 6: return '신입생';
+      case 7: return '기타';
+      default: return '-';
+    }
+  }
+  
+  return '-';
+}
+
 export default async function StudentManagementPage() {
   // DB에서 활성화된 학생 목록을 조회
   const sql = neon(process.env.DATABASE_URL!);
@@ -62,7 +88,7 @@ export default async function StudentManagementPage() {
                   <td>{student.student_name}</td>
                   <td>{student.student_id}</td>
                   <td>{student.student_school}</td>
-                  <td>{student.student_grade}</td>
+                  <td>{formatGrade(student.student_grade)}</td>
                   <td>{student.member_name || student.member_id}</td>
                   {/* 👇 숫자로 된 course_code 데이터에 "일 반"을 붙여서 표시 */}
                   <td>{`${student.course_code}일 반`}</td>
