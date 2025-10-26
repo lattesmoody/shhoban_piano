@@ -56,16 +56,13 @@ export default async function StudentUpdateForm({ params }: { params: Promise<{ 
         <div className={styles.formGroup}>
           <label className={styles.label}>학년</label>
           <select className={styles.input} name="grade" defaultValue={formData.grade}>
-            <option value="1">1학년</option>
-            <option value="2">2학년</option>
-            <option value="3">3학년</option>
-            <option value="4">4학년</option>
-            <option value="5">5학년</option>
-            <option value="6">6학년</option>
+            <option value="유치부">유치부</option>
+            <option value="초등부">초등부</option>
             <option value="중·고등부">중·고등부</option>
             <option value="대회부">대회부</option>
             <option value="연주회부">연주회부</option>
-            <option value="성인부">성인부</option>
+            <option value="신입생">신입생</option>
+            <option value="기타">기타</option>
           </select>
         </div>
         <div className={styles.formGroup}>
