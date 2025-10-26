@@ -3,6 +3,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { neon } from '@neondatabase/serverless';
+import { insertWaitingQueue, removeFromWaitingQueue, reorderWaitingQueue } from '@/app/lib/sql/maps/waitingQueueQueries';
 import dotenv from 'dotenv';
 dotenv.config({ path: './.env.development.local' });
 
@@ -58,8 +59,28 @@ export async function processEntrance(studentId: string): Promise<string> {
     if (!findEmptySql) return isDrum ? '[환경설정 누락] DRUM_FIND_EMPTY_ROOM_SQL' : '[환경설정 누락] PRACTICE_FIND_EMPTY_ROOM_SQL';
     const roomRes: any = await (sql as any).query(findEmptySql);
     const room = Array.isArray(roomRes) ? roomRes[0] : (roomRes?.rows?.[0] ?? null);
-    if (!room) return `${student.student_name}님 반갑습니다. 현재 배정 가능한 방이 없습니다.`;
+    
+    if (!room) {
+      // 방이 없으면 대기열에 추가
+      const queueType = isDrum ? 'drum' : (lessonCode === 1 || lessonCode === 4 ? 'piano' : 'piano');
+      
+      try {
+        await insertWaitingQueue(sql, {
+          student_id: studentId,
+          student_name: student.student_name,
+          student_grade: student.student_grade,
+          lesson_type: lessonCode,
+          queue_type: queueType
+        });
+        
+        return `${student.student_name}님 반갑습니다. 현재 배정 가능한 방이 없어 대기열에 등록되었습니다.`;
+      } catch (error) {
+        console.error('Failed to add to waiting queue:', error);
+        return `${student.student_name}님 반갑습니다. 현재 배정 가능한 방이 없습니다.`;
+      }
+    }
 
+    // 방이 있으면 입실 처리
     const updSqlRaw = isDrum
       ? process.env.DRUM_UPDATE_ENTRANCE_SQL
       : process.env.PRACTICE_UPDATE_ENTRANCE_SQL;
@@ -67,10 +88,19 @@ export async function processEntrance(studentId: string): Promise<string> {
     if (!updSql) return isDrum ? '[환경설정 누락] DRUM_UPDATE_ENTRANCE_SQL' : '[환경설정 누락] PRACTICE_UPDATE_ENTRANCE_SQL';
     await (sql as any).query(updSql, [studentId, student.student_name, now.toISOString(), room.room_no]);
 
+    // 대기열에서 제거 (입실 완료)
+    const queueType = isDrum ? 'drum' : (lessonCode === 1 || lessonCode === 4 ? 'piano' : 'piano');
+    try {
+      await removeFromWaitingQueue(sql, studentId, queueType);
+      await reorderWaitingQueue(sql, queueType);
+    } catch (error) {
+      console.error('Failed to remove from waiting queue:', error);
+    }
+
     // 5) 메시지 구성
     const lessonNameMap: Record<number,string> = {1:'피아노+이론',2:'피아노+드럼',3:'드럼',4:'피아노'};
     const lessonName = lessonNameMap[lessonCode] || '수업';
-    return `${student.student_name}님 반갑습니다. 오늘의 학습은 "${lessonName}" 입니다.`;
+    return `${student.student_name}님 반갑습니다. 오늘의 학습은 "${lessonName}" 입니다. (${room.room_no}번 방)`;
   } catch (e: any) {
     console.error('processEntrance error', e);
     return '오류가 발생했습니다. (입실)';

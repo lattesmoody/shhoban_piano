@@ -4,6 +4,7 @@ import { selectPracticeStatusToday, PracticeRow } from '@/app/lib/sql/maps/pract
 import { selectKinderStatus, KinderRow } from '@/app/lib/sql/maps/kinderRoomQueries';
 import { selectDrumStatus, DrumRow } from '@/app/lib/sql/maps/drumRoomQueries';
 import { selectClassTimeSettings, ClassTimeSetting } from '@/app/lib/sql/maps/classTimeQueries';
+import { selectWaitingQueue, WaitingQueueRow } from '@/app/lib/sql/maps/waitingQueueQueries';
 import { normalizePlaceholderForEnv } from '@/app/lib/sql/utils';
 import MainClient from './MainClient';
 
@@ -82,11 +83,29 @@ export default async function AdminPage() {
     }
   }
 
+  // 대기열 데이터 조회
+  let pianoWaitingQueue: WaitingQueueRow[] = [];
+  let kinderWaitingQueue: WaitingQueueRow[] = [];
+  
+  try {
+    pianoWaitingQueue = await selectWaitingQueue(sql, 'piano');
+  } catch (error) {
+    console.warn('Piano waiting queue data not available:', error);
+  }
+  
+  try {
+    kinderWaitingQueue = await selectWaitingQueue(sql, 'kinder');
+  } catch (error) {
+    console.warn('Kinder waiting queue data not available:', error);
+  }
+
   return <MainClient 
     rows={rows} 
     kinderRows={kinderRows} 
     drumRows={drumRows} 
     classTimeSettings={classTimeSettings}
     studentCourseInfos={studentCourseInfos}
+    pianoWaitingQueue={pianoWaitingQueue}
+    kinderWaitingQueue={kinderWaitingQueue}
   />;
 }

@@ -44,6 +44,7 @@ export type DrumRow = {
 };
 
 import { ClassTimeSetting } from '@/app/lib/sql/maps/classTimeQueries';
+import { WaitingQueueRow } from '@/app/lib/sql/maps/waitingQueueQueries';
 import { StudentCourseInfo } from './page';
 
 type Props = { 
@@ -52,6 +53,8 @@ type Props = {
   drumRows: DrumRow[];
   classTimeSettings: ClassTimeSetting[];
   studentCourseInfos: StudentCourseInfo[];
+  pianoWaitingQueue: WaitingQueueRow[];
+  kinderWaitingQueue: WaitingQueueRow[];
 };
 
 // - 단일 방 카드 UI
@@ -155,7 +158,7 @@ function DrumRoomCompact({
   );
 }
 
-export default function MainClient({ rows, kinderRows, drumRows, classTimeSettings, studentCourseInfos }: Props) {
+export default function MainClient({ rows, kinderRows, drumRows, classTimeSettings, studentCourseInfos, pianoWaitingQueue, kinderWaitingQueue }: Props) {
   // - 헤더 우측 현재시각 표시용 타이머
   const [currentTime, setCurrentTime] = useState('');
   useEffect(() => {
@@ -301,8 +304,8 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
               </div>
             </div>
             <div className="flex flex-col space-y-4 xl:col-span-2">
-              <WaitingList title="피아노 연습 대기" count={8} />
-              <WaitingList title="유치부 연습 대기" count={5} color="bg-pink-500" />
+              <WaitingList title="피아노 연습 대기" waitingQueue={pianoWaitingQueue} />
+              <WaitingList title="유치부 연습 대기" waitingQueue={kinderWaitingQueue} color="bg-pink-500" />
               <button className="px-4 py-6 text-2xl font-bold text-white bg-orange-500 rounded-lg hover:bg-orange-600" onClick={onEntrance}>입실</button>
             </div>
           </div>
@@ -450,18 +453,46 @@ function computeTurnsFromOutTime(value: unknown): string {
   }
 }
 
-// - 대기열 위젯 (단순 숫자 나열)
-function WaitingList({ title, count, color = 'bg-purple-600' }: { title: string; count: number; color?: string; })  {
+// - 대기열 위젯 (실제 대기열 데이터 사용)
+function WaitingList({ 
+  title, 
+  waitingQueue, 
+  color = 'bg-purple-600' 
+}: { 
+  title: string; 
+  waitingQueue: WaitingQueueRow[]; 
+  color?: string; 
+}) {
+  // 대기 시간 계산 (분 단위)
+  const calculateWaitTime = (startTime: string): string => {
+    const start = new Date(startTime);
+    const now = new Date();
+    const diffMinutes = Math.floor((now.getTime() - start.getTime()) / (1000 * 60));
+    return `${diffMinutes}분`;
+  };
+
   return (
     <div className="flex flex-col">
-      <h3 className={`p-2 text-sm font-bold text-center text-white ${color} rounded-t-md`}>{title}</h3>
+      <h3 className={`p-2 text-sm font-bold text-center text-white ${color} rounded-t-md`}>
+        {title} ({waitingQueue.length})
+      </h3>
       <div className="flex-grow bg-white border-x border-b border-gray-400">
-        <ul className="h-full">
-          {Array.from({ length: count }, (_, i) => (
-            <li key={i} className="flex items-center px-2 py-1 border-b border-gray-200 h-[2.15rem]">
-              <span className="mr-2 text-sm text-gray-500">{i + 1}</span>
+        <ul className="h-full max-h-48 overflow-y-auto">
+          {waitingQueue.length === 0 ? (
+            <li className="flex items-center justify-center px-2 py-4 text-sm text-gray-500">
+              대기 중인 학생이 없습니다
             </li>
-          ))}
+          ) : (
+            waitingQueue.map((item) => (
+              <li key={item.queue_id} className="flex items-center justify-between px-2 py-1 border-b border-gray-200 h-[2.15rem]">
+                <div className="flex items-center">
+                  <span className="mr-2 text-sm font-bold text-gray-700">{item.queue_number}</span>
+                  <span className="text-sm text-gray-900">{item.student_name}</span>
+                </div>
+                <span className="text-xs text-gray-500">{calculateWaitTime(item.wait_start_time)}</span>
+              </li>
+            ))
+          )}
         </ul>
       </div>
     </div>
