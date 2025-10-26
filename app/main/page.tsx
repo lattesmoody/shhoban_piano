@@ -13,6 +13,8 @@ export type StudentCourseInfo = {
   student_grade: number | null;
   lesson_code: number;
   grade_name: string;
+  member_id?: string;
+  member_name?: string;
 };
 
 export default async function AdminPage() {
@@ -67,11 +69,34 @@ export default async function AdminPage() {
                   }
                 }
                 
+                // 담당 강사 정보 조회
+                let memberName = '강사';
+                let memberId = '1';
+                if (student.member_id) {
+                  try {
+                    const memberSql = normalizePlaceholderForEnv(process.env.SELECT_MEMBER_BY_ID_SQL);
+                    if (memberSql) {
+                      const memberRes: any = await (sql as any).query(memberSql, [student.member_id]);
+                      const member = Array.isArray(memberRes) ? memberRes[0] : (memberRes?.rows?.[0] ?? null);
+                      if (member) {
+                        memberName = member.member_name || '강사';
+                        memberId = String(member.member_code || student.member_id);
+                      }
+                    } else {
+                      console.warn('SELECT_MEMBER_BY_ID_SQL 환경변수가 설정되지 않았습니다.');
+                    }
+                  } catch (error) {
+                    console.error(`Error fetching member info for ${student.member_id}:`, error);
+                  }
+                }
+
                 studentCourseInfos.push({
                   student_id: studentId,
                   student_grade: student.student_grade,
                   lesson_code: course.lesson_code,
-                  grade_name: gradeName
+                  grade_name: gradeName,
+                  member_id: memberId,
+                  member_name: memberName
                 });
               }
             }

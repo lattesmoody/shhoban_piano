@@ -46,6 +46,13 @@ export type DrumRow = {
 import { ClassTimeSetting } from '@/app/lib/sql/maps/classTimeQueries';
 import { WaitingQueueRow } from '@/app/lib/sql/maps/waitingQueueQueries';
 import { StudentCourseInfo } from './page';
+import dynamic from 'next/dynamic';
+
+// 개발 모드에서만 TestTools 컴포넌트를 동적으로 로드
+const TestTools = dynamic(() => import('./TestTools'), {
+  ssr: false,
+  loading: () => null
+});
 
 type Props = { 
   rows: PracticeRow[]; 
@@ -174,6 +181,7 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
 
   // - 방번호 기준 빠른 조회를 위한 맵 구성
   const byRoom = new Map<number, PracticeRow>();
@@ -304,9 +312,25 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
               </div>
             </div>
             <div className="flex flex-col space-y-4 xl:col-span-2">
-              <WaitingList title="피아노 연습 대기" waitingQueue={pianoWaitingQueue} />
-              <WaitingList title="유치부 연습 대기" waitingQueue={kinderWaitingQueue} color="bg-pink-500" />
+              <WaitingList 
+                title="피아노 연습 대기" 
+                waitingQueue={pianoWaitingQueue} 
+                practiceRows={rows}
+                classTimeSettings={classTimeSettings}
+                studentCourseInfos={studentCourseInfos}
+              />
+              <WaitingList 
+                title="유치부 연습 대기" 
+                waitingQueue={kinderWaitingQueue} 
+                color="bg-pink-500"
+                practiceRows={kinderRows}
+                classTimeSettings={classTimeSettings}
+                studentCourseInfos={studentCourseInfos}
+              />
               <button className="px-4 py-6 text-2xl font-bold text-white bg-orange-500 rounded-lg hover:bg-orange-600" onClick={onEntrance}>입실</button>
+              
+              {/* 개발 모드 테스트 도구 */}
+              <TestTools />
             </div>
           </div>
         </div>
@@ -453,15 +477,29 @@ function computeTurnsFromOutTime(value: unknown): string {
   }
 }
 
-// - 대기열 위젯 (실제 대기열 데이터 사용)
+// 방 배정 예상 정보 타입
+type RoomAssignment = {
+  roomNo: number;
+  expectedExitTime: Date;
+  instructorColor: string;
+  instructorName: string;
+};
+
+// - 대기열 위젯 (실제 대기열 데이터 사용 + 방 배정 예상)
 function WaitingList({ 
   title, 
   waitingQueue, 
-  color = 'bg-purple-600' 
+  color = 'bg-purple-600',
+  practiceRows = [],
+  classTimeSettings = [],
+  studentCourseInfos = []
 }: { 
   title: string; 
   waitingQueue: WaitingQueueRow[]; 
-  color?: string; 
+  color?: string;
+  practiceRows?: PracticeRow[];
+  classTimeSettings?: ClassTimeSetting[];
+  studentCourseInfos?: StudentCourseInfo[];
 }) {
   // 대기 시간 계산 (분 단위)
   const calculateWaitTime = (startTime: string): string => {
@@ -470,6 +508,85 @@ function WaitingList({
     const diffMinutes = Math.floor((now.getTime() - start.getTime()) / (1000 * 60));
     return `${diffMinutes}분`;
   };
+
+  // 강사별 색상 매핑
+  const getInstructorColor = (memberId: string): string => {
+    const colors: { [key: string]: string } = {
+      '1': 'bg-orange-500', // 1번 강사 - 주황색
+      '2': 'bg-blue-500',   // 2번 강사 - 파랑색
+      '3': 'bg-green-500',  // 3번 강사 - 초록색
+      '99': 'bg-gray-500',  // 관리자 - 회색
+      '0': 'bg-purple-500'  // 원장 - 보라색
+    };
+    return colors[memberId] || 'bg-gray-400';
+  };
+
+  // 방 배정 예상 계산
+  const calculateRoomAssignments = (): RoomAssignment[] => {
+    if (!practiceRows || practiceRows.length === 0) return [];
+
+    const assignments: RoomAssignment[] = [];
+    
+    // 현재 사용 중인 방들의 예상 퇴실 시간 계산
+    practiceRows.forEach(room => {
+      if (room.student_id && room.in_time) {
+        try {
+          const inDate = new Date(String(room.in_time));
+          if (!Number.isNaN(inDate.getTime())) {
+            const normalizedInTime = normalizeInTime(inDate);
+            
+            // 학생별 수업 시간 계산
+            const studentInfo = studentCourseInfos.find(info => info.student_id === room.student_id);
+            let classDuration = 35; // 기본값
+            if (studentInfo) {
+              classDuration = getStudentClassDuration(room.student_id!, studentInfo.lesson_code, classTimeSettings, studentCourseInfos);
+            }
+            
+            const expectedExitTime = new Date(normalizedInTime.getTime() + classDuration * 60 * 1000);
+            
+            // 해당 학생의 담당 강사 정보 조회
+            let instructorId = '1'; // 기본값
+            let instructorName = '강사';
+            
+            // 실제 학생 데이터에서 담당 강사 정보 가져오기
+            const instructorInfo = studentCourseInfos.find(info => info.student_id === room.student_id);
+            if (instructorInfo && instructorInfo.member_id && instructorInfo.member_name) {
+              instructorId = instructorInfo.member_id;
+              instructorName = instructorInfo.member_name;
+            } else {
+              // 담당 강사 정보가 없으면 방 번호에 따라 임시 배정
+              if (room.room_no <= 7) {
+                instructorId = '1';
+                instructorName = '정영롱';
+              } else if (room.room_no <= 14) {
+                instructorId = '2';
+                instructorName = '김선생';
+              } else {
+                instructorId = '3';
+                instructorName = '이선생';
+              }
+            }
+
+            assignments.push({
+              roomNo: room.room_no,
+              expectedExitTime,
+              instructorColor: getInstructorColor(instructorId),
+              instructorName
+            });
+          }
+        } catch (error) {
+          console.error('방 배정 계산 오류:', error);
+        }
+      }
+    });
+
+    // 퇴실 시간 순으로 정렬 (빠른 순서대로)
+    assignments.sort((a, b) => a.expectedExitTime.getTime() - b.expectedExitTime.getTime());
+    
+    return assignments;
+  };
+
+  const roomAssignments = calculateRoomAssignments();
 
   // 최소 표시할 행 수 (첨부된 이미지처럼 일정한 높이 유지)
   const minRows = 8;
@@ -480,28 +597,80 @@ function WaitingList({
       <h3 className={`p-2 text-sm font-bold text-center text-white ${color} rounded-t-md`}>
         {title} ({waitingQueue.length})
       </h3>
+      
+      {/* 헤더 행 */}
+      <div className="bg-gray-100 border-x border-gray-400 px-1 py-1">
+        <div className="flex items-center text-xs font-semibold text-gray-700">
+          <div className="w-3 mr-2"></div> {/* 강사 표시 공간 */}
+          <span className="flex-1">수강생이름</span>
+          <span className="mr-1">도착시간</span>
+          <span className="text-center">방배정<br/>입실예정</span>
+        </div>
+      </div>
+      
       <div className="flex-grow bg-white border-x border-b border-gray-400">
         <ul className="h-full">
           {Array.from({ length: displayRows }, (_, index) => {
             const item = waitingQueue[index];
             
             if (item) {
-              // 실제 대기 중인 학생 표시
+              // 방 배정 예상 정보 가져오기
+              const assignmentIndex = item.queue_number - 1;
+              const assignment = roomAssignments[assignmentIndex];
+              
               return (
-                <li key={item.queue_id} className="flex items-center justify-between px-2 py-1 border-b border-gray-200 h-[2.15rem]">
-                  <div className="flex items-center">
-                    <span className="mr-2 text-sm font-bold text-gray-700">{item.queue_number}</span>
-                    <span className="text-sm text-gray-900">{item.student_name}</span>
+                <li key={item.queue_id} className="flex items-center justify-between px-1 py-1 border-b border-gray-200 h-[2.15rem]">
+                  <div className="flex items-center flex-1">
+                    {/* 강사 표시 (색상 원) */}
+                    <div className={`w-3 h-3 rounded-full mr-2 ${assignment ? assignment.instructorColor : 'bg-gray-300'}`}></div>
+                    
+                    {/* 수강생 이름 */}
+                    <span className="text-xs text-gray-900 mr-2 flex-1 truncate">{item.student_name}</span>
+                    
+                    {/* 학원 도착 시간 */}
+                    <span className="text-xs text-gray-600 mr-1">
+                      {new Date(item.wait_start_time).toLocaleTimeString('ko-KR', { 
+                        hour: 'numeric', 
+                        minute: '2-digit',
+                        hour12: false 
+                      })}
+                    </span>
+                    
+                    {/* 방 배정 및 예상 입실 시간 */}
+                    <span className="text-xs font-bold text-blue-600">
+                      {assignment ? (
+                        <div className="text-center">
+                          <div>{assignment.roomNo}번방</div>
+                          <div className="text-xs text-gray-500">
+                            {assignment.expectedExitTime.toLocaleTimeString('ko-KR', { 
+                              hour: 'numeric', 
+                              minute: '2-digit',
+                              hour12: false 
+                            })}
+                          </div>
+                        </div>
+                      ) : '-'}
+                    </span>
                   </div>
-                  <span className="text-xs text-gray-500">{calculateWaitTime(item.wait_start_time)}</span>
                 </li>
               );
             } else {
-              // 빈 행 표시 (첨부된 이미지처럼)
+              // 빈 행 표시 (새로운 형식에 맞게)
               return (
-                <li key={`empty-${index}`} className="flex items-center px-2 py-1 border-b border-gray-200 h-[2.15rem]">
-                  <span className="mr-2 text-sm text-gray-500">{index + 1}</span>
-                  <span className="text-sm text-gray-400">-</span>
+                <li key={`empty-${index}`} className="flex items-center px-1 py-1 border-b border-gray-200 h-[2.15rem]">
+                  <div className="flex items-center flex-1">
+                    {/* 빈 강사 표시 */}
+                    <div className="w-3 h-3 rounded-full mr-2 bg-gray-200"></div>
+                    
+                    {/* 빈 수강생 이름 */}
+                    <span className="text-xs text-gray-400 mr-2 flex-1">-</span>
+                    
+                    {/* 빈 도착 시간 */}
+                    <span className="text-xs text-gray-400 mr-2">-</span>
+                    
+                    {/* 빈 방 배정 */}
+                    <span className="text-xs text-gray-400">-</span>
+                  </div>
                 </li>
               );
             }
@@ -524,5 +693,7 @@ async function onEntrance() {
     alert('처리 중 오류가 발생했습니다.');
   }
 }
+
+
 
 

@@ -48,3 +48,9 @@ next-env.d.ts
 # testfile
 /scripts/
 /_tmp/
+
+# development test tools
+app/main/TestTools.tsx
+public/test-automation.js
+public/auto-test.html
+public/simple-test.html
