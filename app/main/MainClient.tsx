@@ -471,28 +471,41 @@ function WaitingList({
     return `${diffMinutes}분`;
   };
 
+  // 최소 표시할 행 수 (첨부된 이미지처럼 일정한 높이 유지)
+  const minRows = 8;
+  const displayRows = Math.max(minRows, waitingQueue.length);
+
   return (
     <div className="flex flex-col">
       <h3 className={`p-2 text-sm font-bold text-center text-white ${color} rounded-t-md`}>
         {title} ({waitingQueue.length})
       </h3>
       <div className="flex-grow bg-white border-x border-b border-gray-400">
-        <ul className="h-full max-h-48 overflow-y-auto">
-          {waitingQueue.length === 0 ? (
-            <li className="flex items-center justify-center px-2 py-4 text-sm text-gray-500">
-              대기 중인 학생이 없습니다
-            </li>
-          ) : (
-            waitingQueue.map((item) => (
-              <li key={item.queue_id} className="flex items-center justify-between px-2 py-1 border-b border-gray-200 h-[2.15rem]">
-                <div className="flex items-center">
-                  <span className="mr-2 text-sm font-bold text-gray-700">{item.queue_number}</span>
-                  <span className="text-sm text-gray-900">{item.student_name}</span>
-                </div>
-                <span className="text-xs text-gray-500">{calculateWaitTime(item.wait_start_time)}</span>
-              </li>
-            ))
-          )}
+        <ul className="h-full">
+          {Array.from({ length: displayRows }, (_, index) => {
+            const item = waitingQueue[index];
+            
+            if (item) {
+              // 실제 대기 중인 학생 표시
+              return (
+                <li key={item.queue_id} className="flex items-center justify-between px-2 py-1 border-b border-gray-200 h-[2.15rem]">
+                  <div className="flex items-center">
+                    <span className="mr-2 text-sm font-bold text-gray-700">{item.queue_number}</span>
+                    <span className="text-sm text-gray-900">{item.student_name}</span>
+                  </div>
+                  <span className="text-xs text-gray-500">{calculateWaitTime(item.wait_start_time)}</span>
+                </li>
+              );
+            } else {
+              // 빈 행 표시 (첨부된 이미지처럼)
+              return (
+                <li key={`empty-${index}`} className="flex items-center px-2 py-1 border-b border-gray-200 h-[2.15rem]">
+                  <span className="mr-2 text-sm text-gray-500">{index + 1}</span>
+                  <span className="text-sm text-gray-400">-</span>
+                </li>
+              );
+            }
+          })}
         </ul>
       </div>
     </div>
