@@ -11,7 +11,24 @@ function formatTimeCell(value: any): string {
   if (!value) return '';
   const dt = new Date(value);
   if (Number.isNaN(dt.getTime())) return '';
-  return `${pad(dt.getHours())} : ${pad(dt.getMinutes())}`;
+  const hours = dt.getHours();
+  const minutes = dt.getMinutes();
+  return `${hours} : ${pad(minutes)}`;
+}
+
+// 학년 코드를 텍스트로 변환
+function getGradeText(gradeCode: number | null): string {
+  if (!gradeCode) return '';
+  const gradeMap: { [key: number]: string } = {
+    1: '유치부',
+    2: '초등부', 
+    3: '중·고등부',
+    4: '대회부',
+    5: '연주회부',
+    6: '신입생',
+    7: '기타'
+  };
+  return gradeMap[gradeCode] || '';
 }
 
 export default async function StudentAttendancePage({ searchParams }: { searchParams?: { y?: string; m?: string; d?: string } }) {
@@ -56,7 +73,7 @@ export default async function StudentAttendancePage({ searchParams }: { searchPa
         <select name="d" defaultValue={d} className={styles.select}>
           {Array.from({length:31}, (_,i)=>i+1).map(v=> <option key={v} value={v}>{pad(v)}</option>)}
         </select>
-        <button className={styles.btn} type="submit">확인</button>
+        <button className={styles.submit} type="submit">확인</button>
       </form>
       <div className={styles.tableWrap}>
         <table className={styles.table}>
@@ -71,18 +88,26 @@ export default async function StudentAttendancePage({ searchParams }: { searchPa
               <th>비고</th>
             </tr>
           </thead>
-          <tbody>
-            {rows.map((r, idx)=> (
-              <tr key={r.attendance_num}>
-                <td>{idx+1}</td>
-                <td>{r.student_name}</td>
-                <td>{r.student_grade ?? ''}</td>
-                <td>{r.course_name ?? ''}</td>
-                <td>{formatTimeCell(r.in_time)}</td>
-                <td>{formatTimeCell(r.out_time)}</td>
-                <td>{r.remark ?? ''}</td>
+          <tbody className={styles.tbody}>
+            {rows.length > 0 ? (
+              rows.map((r, idx)=> (
+                <tr key={r.attendance_num || idx}>
+                  <td>{idx+1}</td>
+                  <td>{r.student_name || ''}</td>
+                  <td>{getGradeText(r.student_grade)}</td>
+                  <td>{r.course_name || ''}</td>
+                  <td>{formatTimeCell(r.in_time)}</td>
+                  <td>{formatTimeCell(r.out_time)}</td>
+                  <td>{r.remark || ''}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
+                  선택한 날짜에 출석 기록이 없습니다.
+                </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { neon } from '@neondatabase/serverless';
 import { insertWaitingQueue, removeFromWaitingQueue, reorderWaitingQueue } from '@/app/lib/sql/maps/waitingQueueQueries';
 import { selectClassTimeSettings, ClassTimeSetting } from '@/app/lib/sql/maps/classTimeQueries';
+import { insertAttendance } from '@/app/lib/sql/maps/attendanceQueries';
 import dotenv from 'dotenv';
 dotenv.config({ path: './.env.development.local' });
 
@@ -233,6 +234,33 @@ export async function processEntrance(studentId: string): Promise<string> {
       await reorderWaitingQueue(sql, queueType);
     } catch (error) {
       console.error('Failed to remove from waiting queue:', error);
+    }
+
+    // 출석 기록 생성
+    try {
+      const lessonNameMap: Record<number,string> = {1:'피아노+이론',2:'피아노+드럼',3:'드럼',4:'피아노'};
+      const lessonName = lessonNameMap[lessonCode] || '수업';
+      
+      await insertAttendance(sql, {
+        attendance_date: normalizedInTime.toISOString().slice(0, 10), // YYYY-MM-DD 형식
+        student_id: studentId,
+        student_name: student.student_name,
+        student_grade: student.student_grade,
+        course_name: lessonName,
+        in_time: normalizedInTime.toISOString(),
+        out_time: calculatedOutTime.toISOString(),
+        remark: `${room.room_no}번 방`
+      });
+      
+      console.log('출석 기록 생성 완료:', {
+        student_name: student.student_name,
+        course_name: lessonName,
+        in_time: normalizedInTime.toISOString(),
+        out_time: calculatedOutTime.toISOString()
+      });
+    } catch (error) {
+      console.error('출석 기록 생성 실패:', error);
+      // 출석 기록 생성 실패해도 입실은 성공으로 처리
     }
 
     // 5) 메시지 구성
