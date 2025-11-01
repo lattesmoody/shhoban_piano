@@ -606,9 +606,10 @@ function WaitingList({
 
   const roomAssignments = calculateRoomAssignments();
 
-  // 최소 표시할 행 수 (첨부된 이미지처럼 일정한 높이 유지)
-  const minRows = 8;
-  const displayRows = Math.max(minRows, waitingQueue.length);
+  // 표시할 행 수를 4개로 고정하고 스크롤 가능하게 설정
+  const visibleRows = 4;
+  // 대기열이 비어있어도 최소 4개 행은 표시하되, 대기열이 4개보다 많으면 모든 항목 표시
+  const maxItems = Math.max(visibleRows, waitingQueue.length);
 
   return (
     <div className="flex flex-col">
@@ -627,9 +628,13 @@ function WaitingList({
         </div>
       </div>
       
-      <div className="flex-grow bg-white border-x border-b border-gray-400">
-        <ul className="h-full">
-          {Array.from({ length: displayRows }, (_, index) => {
+      {/* 스크롤 가능한 리스트 영역 - 4개 행 높이로 고정 */}
+      <div 
+        className="bg-white border-x border-b border-gray-400 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100" 
+        style={{ height: `${visibleRows * 2.15}rem` }}
+      >
+        <ul>
+          {Array.from({ length: maxItems }, (_, index) => {
             const item = waitingQueue[index];
             
             if (item) {
