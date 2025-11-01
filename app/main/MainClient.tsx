@@ -48,11 +48,14 @@ import { WaitingQueueRow } from '@/app/lib/sql/maps/waitingQueueQueries';
 import { StudentCourseInfo } from './page';
 import dynamic from 'next/dynamic';
 
-// 개발 모드에서만 TestTools 컴포넌트를 동적으로 로드
-const TestTools = dynamic(() => import('./TestTools'), {
-  ssr: false,
-  loading: () => null
-});
+// 개발 모드에서만 TestTools 컴포넌트를 동적으로 로드 (파일이 존재할 때만)
+const TestTools = dynamic(
+  () => import('./TestTools').catch(() => ({ default: () => null })), 
+  {
+    ssr: false,
+    loading: () => null
+  }
+);
 
 type Props = { 
   rows: PracticeRow[]; 
@@ -330,7 +333,7 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
               <button className="px-4 py-6 text-2xl font-bold text-white bg-orange-500 rounded-lg hover:bg-orange-600" onClick={onEntrance}>입실</button>
               
               {/* 개발 모드 테스트 도구 */}
-              <TestTools />
+              {process.env.NODE_ENV === 'development' && <TestTools />}
             </div>
           </div>
         </div>
