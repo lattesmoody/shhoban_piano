@@ -41,6 +41,47 @@ export async function processEntrance(studentId: string): Promise<string> {
 
     const lessonCode: number = Number(course.lesson_code);
     const now = new Date();
+    
+    // 입실 시간 정규화 함수
+    const normalizeInTime = (date: Date): Date => {
+      const normalized = new Date(date);
+      const minute = date.getMinutes();
+      
+      if (minute >= 0 && minute <= 2) {
+        normalized.setMinutes(0, 0, 0);
+      } else if (minute >= 3 && minute <= 7) {
+        normalized.setMinutes(5, 0, 0);
+      } else if (minute >= 8 && minute <= 12) {
+        normalized.setMinutes(10, 0, 0);
+      } else if (minute >= 13 && minute <= 17) {
+        normalized.setMinutes(15, 0, 0);
+      } else if (minute >= 18 && minute <= 22) {
+        normalized.setMinutes(20, 0, 0);
+      } else if (minute >= 23 && minute <= 27) {
+        normalized.setMinutes(25, 0, 0);
+      } else if (minute >= 28 && minute <= 32) {
+        normalized.setMinutes(30, 0, 0);
+      } else if (minute >= 33 && minute <= 37) {
+        normalized.setMinutes(35, 0, 0);
+      } else if (minute >= 38 && minute <= 42) {
+        normalized.setMinutes(40, 0, 0);
+      } else if (minute >= 43 && minute <= 47) {
+        normalized.setMinutes(45, 0, 0);
+      } else if (minute >= 48 && minute <= 52) {
+        normalized.setMinutes(50, 0, 0);
+      } else if (minute >= 53 && minute <= 57) {
+        normalized.setMinutes(55, 0, 0);
+      } else if (minute >= 58 && minute <= 59) {
+        // 다음 시간 00분으로 간주
+        normalized.setHours(normalized.getHours() + 1);
+        normalized.setMinutes(0, 0, 0);
+      }
+      
+      return normalized;
+    };
+    
+    // 입실 시간 정규화 적용
+    const normalizedInTime = normalizeInTime(now);
 
     // 3) 중복 입실 체크: 이미 입실한 학생인지 확인
     const isDrum = lessonCode === 3;
@@ -107,9 +148,10 @@ export async function processEntrance(studentId: string): Promise<string> {
     }
     
     console.log('Executing SQL:', updSql);
-    console.log('Parameters:', [studentId, student.student_name, now.toISOString(), room.room_no]);
+    console.log('Parameters:', [studentId, student.student_name, normalizedInTime.toISOString(), room.room_no]);
+    console.log('Original time:', now.toISOString(), '→ Normalized time:', normalizedInTime.toISOString());
     
-    await (sql as any).query(updSql, [studentId, student.student_name, now.toISOString(), room.room_no]);
+    await (sql as any).query(updSql, [studentId, student.student_name, normalizedInTime.toISOString(), room.room_no]);
 
     // 대기열에서 제거 (입실 완료)
     const queueType = isDrum ? 'drum' : (lessonCode === 1 || lessonCode === 4 ? 'piano' : 'piano');
