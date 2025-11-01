@@ -26,8 +26,27 @@ export default async function ClassTimeSetupForm({ searchParams }: { searchParam
   const showUpdated = (sp?.updated === '1');
 
   return (
-    <div className={styles.container}>
-      <header className={styles.header}><h1 className={styles.title}>과정별 수업 시간 설정</h1></header>
+    <>
+      <div className={styles.topBar}>
+        <div className={styles.topBarInner}>
+          <div>관리자 님, 환영합니다 : )</div>
+          <nav className={styles.topNav} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0' }}>
+            <Link href="/main" style={{ padding: '4px 24px', textDecoration: 'none', color: 'inherit' }}>Main</Link>
+            <Link href="/setting_manage" style={{ padding: '4px 24px', textDecoration: 'none', color: 'inherit' }}>Manage</Link>
+            <form action={async () => {
+              'use server';
+              const { logoutAction } = await import('@/app/main/actions');
+              await logoutAction();
+            }} style={{ display: 'inline', margin: 0 }}>
+              <button type="submit" style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: 'inherit', padding: '4px 24px' }}>
+                Logout
+              </button>
+            </form>
+          </nav>
+        </div>
+      </div>
+      <div className={styles.container}>
+        <header className={styles.header}><h1 className={styles.title}>과정별 수업 시간 설정</h1></header>
       <div className={styles.tableWrap}>
         <form action={saveClassTimeSettings}>
           <table className={styles.table}>
@@ -69,6 +88,7 @@ export default async function ClassTimeSetupForm({ searchParams }: { searchParam
       <Suspense fallback={null}>
         <UpdatedAlert serverShow={showUpdated} />
       </Suspense>
-    </div>
+      </div>
+    </>
   );
 }

@@ -1,6 +1,7 @@
 import { neon } from '@neondatabase/serverless';
 import styles from './page.module.css';
 import { selectAttendanceByDate } from '../lib/sql/maps/attendanceQueries';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,16 +16,36 @@ function formatTimeCell(value: any): string {
 
 export default async function StudentAttendancePage({ searchParams }: { searchParams?: { y?: string; m?: string; d?: string } }) {
   const today = new Date();
-  const y = Number(searchParams?.y ?? today.getFullYear());
-  const m = Number(searchParams?.m ?? (today.getMonth()+1));
-  const d = Number(searchParams?.d ?? today.getDate());
+  const resolvedSearchParams = await searchParams;
+  const y = Number(resolvedSearchParams?.y ?? today.getFullYear());
+  const m = Number(resolvedSearchParams?.m ?? (today.getMonth()+1));
+  const d = Number(resolvedSearchParams?.d ?? today.getDate());
 
   const sql = neon(process.env.DATABASE_URL!);
   const rows = await selectAttendanceByDate(sql, y, m, d);
 
   return (
-    <div className={styles.container}>
-      <header className={styles.header}><h1 className={styles.title}>수강생 출석 현황</h1></header>
+    <>
+      <div className={styles.topBar}>
+        <div className={styles.topBarInner}>
+          <div>관리자 님, 환영합니다 : )</div>
+          <nav className={styles.topNav} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0' }}>
+            <Link href="/main" style={{ padding: '4px 24px', textDecoration: 'none', color: 'inherit' }}>Main</Link>
+            <Link href="/setting_manage" style={{ padding: '4px 24px', textDecoration: 'none', color: 'inherit' }}>Manage</Link>
+            <form action={async () => {
+              'use server';
+              const { logoutAction } = await import('@/app/main/actions');
+              await logoutAction();
+            }} style={{ display: 'inline', margin: 0 }}>
+              <button type="submit" style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: 'inherit', padding: '4px 24px' }}>
+                Logout
+              </button>
+            </form>
+          </nav>
+        </div>
+      </div>
+      <div className={styles.container}>
+        <header className={styles.header}><h1 className={styles.title}>수강생 출석 현황</h1></header>
       <form className={styles.filterBar}>
         <select name="y" defaultValue={y} className={styles.select}>
           {Array.from({length:5}, (_,i)=> y-2+i).map(v=> <option key={v} value={v}>{v}</option>)}
@@ -65,6 +86,7 @@ export default async function StudentAttendancePage({ searchParams }: { searchPa
           </tbody>
         </table>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

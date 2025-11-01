@@ -10,3 +10,7 @@
 .btn { border:none; padding:.5rem 1.2rem; border-radius:6px; color:#fff; background:#168a83; font-weight:700; cursor:pointer; }
 .btnCancel { background:#6b7280; }
 
+.topBar { background: #2d3748; color: white; padding: 0.75rem 0; }
+.topBarInner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 1rem; }
+.topNav { display: flex; align-items: center; }
+

@@ -5,6 +5,7 @@ import DeleteButton from './DeleteButton';
 import ActivateButton from './ActivateButton';
 import AllEmptyButton from './AllEmptyButton';
 import AllLectureButton from './AllLectureButton';
+import Link from 'next/link';
 
 export default async function PracticeRoomManagePage() {
   const sql = neon(process.env.DATABASE_URL!);
@@ -15,10 +16,18 @@ export default async function PracticeRoomManagePage() {
       <div className={styles.topBar}>
         <div className={styles.topBarInner}>
           <div>관리자 님, 환영합니다 : )</div>
-          <nav className={styles.topNav}>
-            <a href="#">Main</a>
-            <a href="#">Manage</a>
-            <a href="#">Logout</a>
+          <nav className={styles.topNav} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0' }}>
+            <Link href="/main" style={{ padding: '4px 24px', textDecoration: 'none', color: 'inherit' }}>Main</Link>
+            <Link href="/setting_manage" style={{ padding: '4px 24px', textDecoration: 'none', color: 'inherit' }}>Manage</Link>
+            <form action={async () => {
+              'use server';
+              const { logoutAction } = await import('@/app/main/actions');
+              await logoutAction();
+            }} style={{ display: 'inline', margin: 0 }}>
+              <button type="submit" style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: 'inherit', padding: '4px 24px' }}>
+                Logout
+              </button>
+            </form>
           </nav>
         </div>
       </div>

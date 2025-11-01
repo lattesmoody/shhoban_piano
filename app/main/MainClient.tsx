@@ -283,11 +283,11 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
       <header className="bg-gray-800 text-white shadow-md">
         <div className="container mx-auto flex justify-between items-center p-3">
           <div className="text-sm">관리자 님, 환영합니다 :)</div>
-          <nav className="flex items-center space-x-6">
-            <a href="#" className="text-sm hover:text-gray-300">Main</a>
-            <Link href="/setting_manage" className="text-sm hover:text-gray-300">Manage</Link>
-            <form action={logoutAction}>
-              <button type="submit" className="text-sm hover:text-gray-300">Logout</button>
+          <nav className="flex items-center justify-center space-x-0">
+            <Link href="/main" className="px-6 py-1 text-sm hover:text-gray-300 bg-gray-800 hover:bg-gray-700 transition-colors">Main</Link>
+            <Link href="/setting_manage" className="px-6 py-1 text-sm hover:text-gray-300 bg-gray-800 hover:bg-gray-700 transition-colors">Manage</Link>
+            <form action={logoutAction} className="inline">
+              <button type="submit" className="px-6 py-1 text-sm hover:text-gray-300 bg-gray-800 hover:bg-gray-700 transition-colors">Logout</button>
             </form>
           </nav>
         </div>
