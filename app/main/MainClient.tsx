@@ -675,7 +675,7 @@ function WaitingList({
                     <button
                       onClick={() => {
                         if (onRemoveFromQueue && confirm(`${item.student_name}님을 대기열에서 삭제하시겠습니까?`)) {
-                          onRemoveFromQueue(item.queue_id, item.student_id);
+                          onRemoveFromQueue(String(item.queue_id), item.student_id);
                         }
                       }}
                       className="w-6 h-6 ml-1 text-xs bg-red-500 hover:bg-red-600 text-white rounded flex items-center justify-center"
