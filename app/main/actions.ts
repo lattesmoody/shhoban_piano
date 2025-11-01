@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { neon } from '@neondatabase/serverless';
 import { insertWaitingQueue, removeFromWaitingQueue, reorderWaitingQueue } from '@/app/lib/sql/maps/waitingQueueQueries';
+import { selectClassTimeSettings, ClassTimeSetting } from '@/app/lib/sql/maps/classTimeQueries';
 import dotenv from 'dotenv';
 dotenv.config({ path: './.env.development.local' });
 
@@ -83,6 +84,70 @@ export async function processEntrance(studentId: string): Promise<string> {
     // 입실 시간 정규화 적용
     const normalizedInTime = normalizeInTime(now);
 
+    // 과정별 수업 시간 설정 조회하여 퇴실 시간 계산
+    const calculateOutTime = async (): Promise<Date> => {
+      try {
+        const classTimeSettings = await selectClassTimeSettings(sql);
+        
+        // 학생 학년 정보로 grade_name 매핑
+        let gradeName = '초등부'; // 기본값
+        if (student.student_grade) {
+          switch (Number(student.student_grade)) {
+            case 1: gradeName = '유치부'; break;
+            case 2: gradeName = '초등부'; break;
+            case 3: gradeName = '중고등부'; break;
+            case 4: gradeName = '대회부'; break;
+            case 5: gradeName = '연주회부'; break;
+            case 6: gradeName = '신입생'; break;
+            case 7: gradeName = '기타'; break;
+            default: gradeName = '초등부'; break;
+          }
+        }
+
+        // 해당 학년의 수업 시간 설정 찾기
+        const setting = classTimeSettings.find(s => s.grade_name === gradeName);
+        let classDuration = 35; // 기본 수업 시간 (분)
+
+        if (setting) {
+          // 레슨 코드에 따른 수업 시간 결정
+          switch (lessonCode) {
+            case 1: // 피아노+이론
+              classDuration = (setting.pt_piano || 0) + (setting.pt_theory || 0);
+              break;
+            case 2: // 피아노+드럼
+              classDuration = (setting.pd_piano || 0) + (setting.pd_drum || 0);
+              break;
+            case 3: // 드럼
+              classDuration = setting.drum_only || 35;
+              break;
+            case 4: // 피아노
+              classDuration = setting.piano_only || 35;
+              break;
+            default:
+              classDuration = 35;
+              break;
+          }
+        }
+
+        // 최소 수업 시간 보장
+        if (classDuration <= 0) classDuration = 35;
+
+        // 퇴실 시간 = 정규화된 입실 시간 + 수업 시간
+        const outTime = new Date(normalizedInTime.getTime() + classDuration * 60 * 1000);
+        
+        console.log(`수업 시간 계산: 학년=${gradeName}, 레슨=${lessonCode}, 시간=${classDuration}분`);
+        console.log(`입실: ${normalizedInTime.toISOString()} → 퇴실: ${outTime.toISOString()}`);
+        
+        return outTime;
+      } catch (error) {
+        console.error('퇴실 시간 계산 오류:', error);
+        // 오류 시 기본 35분 후로 설정
+        return new Date(normalizedInTime.getTime() + 35 * 60 * 1000);
+      }
+    };
+
+    const calculatedOutTime = await calculateOutTime();
+
     // 3) 중복 입실 체크: 이미 입실한 학생인지 확인
     const isDrum = lessonCode === 3;
     const checkEntranceSqlRaw = isDrum
@@ -135,10 +200,10 @@ export async function processEntrance(studentId: string): Promise<string> {
       }
     }
 
-    // 방이 있으면 입실 처리
+    // 방이 있으면 입실 처리 (퇴실 시간 포함)
     const updSqlRaw = isDrum
-      ? process.env.DRUM_UPDATE_ENTRANCE_SQL
-      : process.env.PRACTICE_UPDATE_ENTRANCE_SQL;
+      ? (process.env.DRUM_UPDATE_ENTRANCE_WITH_OUT_TIME_SQL || process.env.DRUM_UPDATE_ENTRANCE_SQL)
+      : (process.env.PRACTICE_UPDATE_ENTRANCE_WITH_OUT_TIME_SQL || process.env.PRACTICE_UPDATE_ENTRANCE_SQL);
     
     const updSql = normalizePlaceholderForEnv(updSqlRaw);
     
@@ -148,10 +213,18 @@ export async function processEntrance(studentId: string): Promise<string> {
     }
     
     console.log('Executing SQL:', updSql);
-    console.log('Parameters:', [studentId, student.student_name, normalizedInTime.toISOString(), room.room_no]);
+    console.log('Parameters:', [studentId, student.student_name, normalizedInTime.toISOString(), calculatedOutTime.toISOString(), room.room_no]);
     console.log('Original time:', now.toISOString(), '→ Normalized time:', normalizedInTime.toISOString());
+    console.log('Calculated out time:', calculatedOutTime.toISOString());
     
-    await (sql as any).query(updSql, [studentId, student.student_name, normalizedInTime.toISOString(), room.room_no]);
+    // SQL 쿼리가 out_time을 포함하는지 확인하고 적절한 파라미터 전달
+    if (updSql.includes('out_time')) {
+      // out_time을 포함하는 쿼리
+      await (sql as any).query(updSql, [studentId, student.student_name, normalizedInTime.toISOString(), calculatedOutTime.toISOString(), room.room_no]);
+    } else {
+      // 기존 쿼리 (out_time 미포함)
+      await (sql as any).query(updSql, [studentId, student.student_name, normalizedInTime.toISOString(), room.room_no]);
+    }
 
     // 대기열에서 제거 (입실 완료)
     const queueType = isDrum ? 'drum' : (lessonCode === 1 || lessonCode === 4 ? 'piano' : 'piano');
@@ -186,6 +259,26 @@ function normalizePlaceholderForEnv(raw: string | undefined): string {
   normalized = normalized.replace(/\\"/g, '"');
   
   return normalized;
+}
+
+// 대기열에서 수동 삭제
+export async function removeFromWaitingQueueAction(queueId: string, studentId: string, queueType: 'piano' | 'kinder' | 'drum') {
+  try {
+    const sql = neon(process.env.DATABASE_URL!);
+    
+    // 대기열에서 해당 학생 제거
+    await removeFromWaitingQueue(sql, studentId, queueType);
+    
+    // 대기열 순서 재정렬
+    await reorderWaitingQueue(sql, queueType);
+    
+    console.log(`대기열에서 학생 ${studentId} 삭제 완료 (타입: ${queueType})`);
+    
+    return { success: true, message: '대기열에서 삭제되었습니다.' };
+  } catch (error) {
+    console.error('대기열 삭제 오류:', error);
+    return { success: false, message: '삭제 중 오류가 발생했습니다.' };
+  }
 }
 
 

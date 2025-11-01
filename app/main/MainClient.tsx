@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { logoutAction } from './actions';
+import { logoutAction, removeFromWaitingQueueAction } from './actions';
 
 // - 연습실 현황을 메인 대시보드 UI로 매핑하는 클라이언트 컴포넌트
 // - 서버 컴포넌트에서 rows를 주입받아 화면만 책임
@@ -165,6 +165,23 @@ function DrumRoomCompact({
 export default function MainClient({ rows, kinderRows, drumRows, classTimeSettings, studentCourseInfos, pianoWaitingQueue, kinderWaitingQueue }: Props) {
   // - 헤더 우측 현재시각 표시용 타이머
   const [currentTime, setCurrentTime] = useState('');
+  
+  // 대기열 삭제 핸들러
+  const handleRemoveFromQueue = async (queueId: string, studentId: string, queueType: 'piano' | 'kinder' | 'drum' = 'piano') => {
+    try {
+      const result = await removeFromWaitingQueueAction(queueId, studentId, queueType);
+      if (result.success) {
+        alert(result.message);
+        // 페이지 새로고침으로 업데이트된 대기열 반영
+        window.location.reload();
+      } else {
+        alert(result.message);
+      }
+    } catch (error) {
+      console.error('대기열 삭제 오류:', error);
+      alert('삭제 중 오류가 발생했습니다.');
+    }
+  };
   useEffect(() => {
     const timer = setInterval(() => {
       const now = new Date();
@@ -315,6 +332,7 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
                 practiceRows={rows}
                 classTimeSettings={classTimeSettings}
                 studentCourseInfos={studentCourseInfos}
+                onRemoveFromQueue={(queueId, studentId) => handleRemoveFromQueue(queueId, studentId, 'piano')}
               />
               <WaitingList 
                 title="유치부 연습 대기" 
@@ -323,6 +341,7 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
                 practiceRows={kinderRows}
                 classTimeSettings={classTimeSettings}
                 studentCourseInfos={studentCourseInfos}
+                onRemoveFromQueue={(queueId, studentId) => handleRemoveFromQueue(queueId, studentId, 'kinder')}
               />
               <button className="px-4 py-6 text-2xl font-bold text-white bg-orange-500 rounded-lg hover:bg-orange-600" onClick={onEntrance}>입실</button>
               
@@ -489,7 +508,8 @@ function WaitingList({
   color = 'bg-purple-600',
   practiceRows = [],
   classTimeSettings = [],
-  studentCourseInfos = []
+  studentCourseInfos = [],
+  onRemoveFromQueue
 }: { 
   title: string; 
   waitingQueue: WaitingQueueRow[]; 
@@ -497,6 +517,7 @@ function WaitingList({
   practiceRows?: PracticeRow[];
   classTimeSettings?: ClassTimeSetting[];
   studentCourseInfos?: StudentCourseInfo[];
+  onRemoveFromQueue?: (queueId: string, studentId: string) => void;
 }) {
   // 대기 시간 계산 (분 단위)
   const calculateWaitTime = (startTime: string): string => {
@@ -602,6 +623,7 @@ function WaitingList({
           <span className="flex-1">수강생이름</span>
           <span className="mr-1">도착시간</span>
           <span className="text-center">방배정<br/>입실예정</span>
+          <span className="w-8 text-center">삭제</span>
         </div>
       </div>
       
@@ -648,6 +670,19 @@ function WaitingList({
                         </div>
                       ) : '-'}
                     </span>
+                    
+                    {/* 삭제 버튼 */}
+                    <button
+                      onClick={() => {
+                        if (onRemoveFromQueue && confirm(`${item.student_name}님을 대기열에서 삭제하시겠습니까?`)) {
+                          onRemoveFromQueue(item.queue_id, item.student_id);
+                        }
+                      }}
+                      className="w-6 h-6 ml-1 text-xs bg-red-500 hover:bg-red-600 text-white rounded flex items-center justify-center"
+                      title="대기열에서 삭제"
+                    >
+                      ×
+                    </button>
                   </div>
                 </li>
               );
@@ -667,6 +702,9 @@ function WaitingList({
                     
                     {/* 빈 방 배정 */}
                     <span className="text-xs text-gray-400">-</span>
+                    
+                    {/* 빈 삭제 버튼 공간 */}
+                    <div className="w-6 h-6 ml-1"></div>
                   </div>
                 </li>
               );
