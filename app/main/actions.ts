@@ -111,11 +111,11 @@ export async function processEntrance(studentId: string): Promise<string> {
         if (setting) {
           // 레슨 코드에 따른 수업 시간 결정
           switch (lessonCode) {
-            case 1: // 피아노+이론
-              classDuration = (setting.pt_piano || 0) + (setting.pt_theory || 0);
+            case 1: // 피아노+이론 => 피아노 시간만 반영
+              classDuration = setting.pt_piano || 35;
               break;
-            case 2: // 피아노+드럼
-              classDuration = (setting.pd_piano || 0) + (setting.pd_drum || 0);
+            case 2: // 피아노+드럼 => 피아노 시간만 반영
+              classDuration = setting.pd_piano || 35;
               break;
             case 3: // 드럼
               classDuration = setting.drum_only || 35;
