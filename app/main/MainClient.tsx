@@ -50,7 +50,12 @@ import dynamic from 'next/dynamic';
 
 // 개발 모드에서만 TestTools 컴포넌트를 동적으로 로드 (파일이 존재할 때만)
 const TestTools = dynamic(
-  () => import('./TestTools').catch(() => ({ default: () => null })), 
+  () => {
+    if (process.env.NODE_ENV !== 'development') {
+      return Promise.resolve({ default: () => null });
+    }
+    return import('./TestTools').catch(() => ({ default: () => null }));
+  }, 
   {
     ssr: false,
     loading: () => null
