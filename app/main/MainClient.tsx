@@ -746,17 +746,39 @@ async function onExit() {
     const studentId = window.prompt('퇴실할 수강생 고유번호를 입력하세요!')?.trim();
     if (!studentId) return;
     
-    const confirmed = confirm(`수강생 ${studentId}번을 퇴실 처리하시겠습니까?`);
-    if (!confirmed) return;
-    
-    const res = await fetch('/api/process-exit', { 
-      method: 'POST', 
-      headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify({ studentId }) 
+    // 퇴실 가능 여부 확인
+    const checkRes = await fetch('/api/check-exit-eligibility', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId })
     });
-    const text = await res.text();
-    alert(text || '퇴실 처리되었습니다.');
-    if (res.ok) location.reload();
+    
+    if (!checkRes.ok) {
+      alert('퇴실 가능 여부 확인 중 오류가 발생했습니다.');
+      return;
+    }
+    
+    const checkData = await checkRes.json();
+    
+    // 상태에 따른 알림창 표시
+    switch (checkData.status) {
+      case 'not_entered':
+        alert('입실 상태가 아닙니다.');
+        break;
+        
+      case 'time_insufficient':
+        alert(checkData.message); // "X분 남음"
+        break;
+        
+      case 'can_exit':
+        alert(checkData.message); // "O"
+        break;
+        
+      default:
+        alert('알 수 없는 상태입니다.');
+        break;
+    }
+    
   } catch (e) {
     console.error('퇴실 처리 오류:', e);
     alert('퇴실 처리 중 오류가 발생했습니다.');
