@@ -14,6 +14,7 @@ export type PracticeRow = {
   student_grade: number | null;
   in_time: string | null;
   out_time: string | null;
+  actual_out_time: string | null;
   turns: number;
   is_enabled: boolean;
   usage_yn: number;
@@ -26,6 +27,7 @@ export type KinderRow = {
   student_grade: number | null;
   in_time: string | null;
   out_time: string | null;
+  actual_out_time: string | null;
   turns: number;
   is_enabled: boolean;
   usage_yn: number;
@@ -38,6 +40,7 @@ export type DrumRow = {
   student_grade: number | null;
   in_time: string | null;
   out_time: string | null;
+  actual_out_time: string | null;
   turns: number;
   is_enabled: boolean;
   usage_yn: number;
@@ -122,7 +125,7 @@ function DrumRoomCompact({
         {headers.map((r, idx) => {
           const name = r?.student_name || '';
           
-          // 계산된 퇴실 시간을 기준으로 분침 계산 (학생별 수업 시간 적용)
+          // 퇴실 시간을 기준으로 분침 계산 (actual_out_time 우선, 학생별 수업 시간 적용)
           let turns = '';
           if (r?.in_time && r?.student_id) {
             try {
@@ -130,15 +133,26 @@ function DrumRoomCompact({
               if (!Number.isNaN(inDate.getTime())) {
                 const normalizedInTime = normalizeInTime(inDate);
                 
-                // 학생별 수업 시간 계산
-                const studentInfo = studentCourseInfos.find(info => info.student_id === r.student_id);
-                let classDuration = 35; // 기본값
-                if (studentInfo) {
-                  classDuration = getStudentClassDuration(r.student_id, studentInfo.lesson_code, classTimeSettings, studentCourseInfos);
+                // 퇴실 시간 결정: actual_out_time 우선, 없으면 out_time, 없으면 계산
+                let finalOutTime: Date;
+                
+                if (r.actual_out_time) {
+                  // 실제 퇴실 시간이 있으면 사용
+                  finalOutTime = new Date(String(r.actual_out_time));
+                } else if (r.out_time) {
+                  // 예정 퇴실 시간이 있으면 사용
+                  finalOutTime = new Date(String(r.out_time));
+                } else {
+                  // 둘 다 없으면 학생별 수업 시간으로 계산
+                  const studentInfo = studentCourseInfos.find(info => info.student_id === r.student_id);
+                  let classDuration = 35; // 기본값
+                  if (studentInfo) {
+                    classDuration = getStudentClassDuration(r.student_id, studentInfo.lesson_code, classTimeSettings, studentCourseInfos);
+                  }
+                  finalOutTime = new Date(normalizedInTime.getTime() + classDuration * 60 * 1000);
                 }
                 
-                const calculatedOutTime = new Date(normalizedInTime.getTime() + classDuration * 60 * 1000);
-                turns = computeTurnsFromOutTime(calculatedOutTime) || '';
+                turns = computeTurnsFromOutTime(finalOutTime) || '';
               }
             } catch {
               turns = '';
@@ -209,9 +223,9 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
     const roomNo = idx + 1;
     const r = byRoom.get(roomNo);
     const name = r?.student_name ?? null;
-    const time = combineTime(r?.in_time, r?.out_time, r?.student_id, classTimeSettings, studentCourseInfos);
+    const time = combineTime(r?.in_time, r?.out_time, r?.actual_out_time, r?.student_id, classTimeSettings, studentCourseInfos);
     
-    // 계산된 퇴실 시간을 기준으로 분침 계산 (학생별 수업 시간 적용)
+    // 퇴실 시간을 기준으로 분침 계산 (actual_out_time 우선, 학생별 수업 시간 적용)
     let number = '-';
     if (r?.in_time && r?.student_id) {
       try {
@@ -219,15 +233,26 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
         if (!Number.isNaN(inDate.getTime())) {
           const normalizedInTime = normalizeInTime(inDate);
           
-          // 학생별 수업 시간 계산
-          const studentInfo = studentCourseInfos.find(info => info.student_id === r.student_id);
-          let classDuration = 35; // 기본값
-          if (studentInfo) {
-            classDuration = getStudentClassDuration(r.student_id, studentInfo.lesson_code, classTimeSettings, studentCourseInfos);
+          // 퇴실 시간 결정: actual_out_time 우선, 없으면 out_time, 없으면 계산
+          let finalOutTime: Date;
+          
+          if (r.actual_out_time) {
+            // 실제 퇴실 시간이 있으면 사용
+            finalOutTime = new Date(String(r.actual_out_time));
+          } else if (r.out_time) {
+            // 예정 퇴실 시간이 있으면 사용
+            finalOutTime = new Date(String(r.out_time));
+          } else {
+            // 둘 다 없으면 학생별 수업 시간으로 계산
+            const studentInfo = studentCourseInfos.find(info => info.student_id === r.student_id);
+            let classDuration = 35; // 기본값
+            if (studentInfo) {
+              classDuration = getStudentClassDuration(r.student_id, studentInfo.lesson_code, classTimeSettings, studentCourseInfos);
+            }
+            finalOutTime = new Date(normalizedInTime.getTime() + classDuration * 60 * 1000);
           }
           
-          const calculatedOutTime = new Date(normalizedInTime.getTime() + classDuration * 60 * 1000);
-          number = computeTurnsFromOutTime(calculatedOutTime) || '-';
+          number = computeTurnsFromOutTime(finalOutTime) || '-';
         }
       } catch {
         number = '-';
@@ -249,9 +274,9 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
     const r = kinderRows.find(k => k.room_no === roomNo);
     const enabled = r ? r.is_enabled : false;
     const displayName = r?.student_name ?? null;
-    const time = combineTime(r?.in_time, r?.out_time, r?.student_id, classTimeSettings, studentCourseInfos);
+    const time = combineTime(r?.in_time, r?.out_time, r?.actual_out_time, r?.student_id, classTimeSettings, studentCourseInfos);
     
-    // 계산된 퇴실 시간을 기준으로 분침 계산 (학생별 수업 시간 적용)
+    // 퇴실 시간을 기준으로 분침 계산 (actual_out_time 우선, 학생별 수업 시간 적용)
     let number = '-';
     if (r?.in_time && r?.student_id) {
       try {
@@ -259,15 +284,26 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
         if (!Number.isNaN(inDate.getTime())) {
           const normalizedInTime = normalizeInTime(inDate);
           
-          // 학생별 수업 시간 계산
-          const studentInfo = studentCourseInfos.find(info => info.student_id === r.student_id);
-          let classDuration = 35; // 기본값
-          if (studentInfo) {
-            classDuration = getStudentClassDuration(r.student_id, studentInfo.lesson_code, classTimeSettings, studentCourseInfos);
+          // 퇴실 시간 결정: actual_out_time 우선, 없으면 out_time, 없으면 계산
+          let finalOutTime: Date;
+          
+          if (r.actual_out_time) {
+            // 실제 퇴실 시간이 있으면 사용
+            finalOutTime = new Date(String(r.actual_out_time));
+          } else if (r.out_time) {
+            // 예정 퇴실 시간이 있으면 사용
+            finalOutTime = new Date(String(r.out_time));
+          } else {
+            // 둘 다 없으면 학생별 수업 시간으로 계산
+            const studentInfo = studentCourseInfos.find(info => info.student_id === r.student_id);
+            let classDuration = 35; // 기본값
+            if (studentInfo) {
+              classDuration = getStudentClassDuration(r.student_id, studentInfo.lesson_code, classTimeSettings, studentCourseInfos);
+            }
+            finalOutTime = new Date(normalizedInTime.getTime() + classDuration * 60 * 1000);
           }
           
-          const calculatedOutTime = new Date(normalizedInTime.getTime() + classDuration * 60 * 1000);
-          number = computeTurnsFromOutTime(calculatedOutTime) || '-';
+          number = computeTurnsFromOutTime(finalOutTime) || '-';
         }
       } catch {
         number = '-';
@@ -396,6 +432,7 @@ function getStudentClassDuration(
 function combineTime(
   inTime?: string | null, 
   outTime?: string | null, 
+  actualOutTime?: string | null,
   studentId?: string | null,
   classTimeSettings?: ClassTimeSetting[], 
   studentCourseInfos?: StudentCourseInfo[]
@@ -409,20 +446,29 @@ function combineTime(
     // 입실 시간을 정규화
     const normalizedInTime = normalizeInTime(inDate);
     
-    // 학생별 수업 시간 계산 (기본값 35분)
-    let classDuration = 35;
-    if (studentId && classTimeSettings && studentCourseInfos) {
-      const studentInfo = studentCourseInfos.find(info => info.student_id === studentId);
-      if (studentInfo) {
-        classDuration = getStudentClassDuration(studentId, studentInfo.lesson_code, classTimeSettings, studentCourseInfos);
+    // 퇴실 시간 결정: actual_out_time 우선, 없으면 out_time, 없으면 계산
+    let finalOutTime: Date;
+    
+    if (actualOutTime) {
+      // 실제 퇴실 시간이 있으면 사용
+      finalOutTime = new Date(String(actualOutTime));
+    } else if (outTime) {
+      // 예정 퇴실 시간이 있으면 사용
+      finalOutTime = new Date(String(outTime));
+    } else {
+      // 둘 다 없으면 학생별 수업 시간으로 계산
+      let classDuration = 35;
+      if (studentId && classTimeSettings && studentCourseInfos) {
+        const studentInfo = studentCourseInfos.find(info => info.student_id === studentId);
+        if (studentInfo) {
+          classDuration = getStudentClassDuration(studentId, studentInfo.lesson_code, classTimeSettings, studentCourseInfos);
+        }
       }
+      finalOutTime = new Date(normalizedInTime.getTime() + classDuration * 60 * 1000);
     }
     
-    // 수업 시간만큼 더해서 퇴실 시간 계산
-    const outDate = new Date(normalizedInTime.getTime() + classDuration * 60 * 1000);
-    
     const inTimeStr = formatTimeCell(normalizedInTime);
-    const outTimeStr = formatTimeCell(outDate);
+    const outTimeStr = formatTimeCell(finalOutTime);
     
     return `${inTimeStr} ~ ${outTimeStr}`;
   } catch {

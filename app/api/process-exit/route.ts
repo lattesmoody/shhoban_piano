@@ -116,14 +116,52 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. 출석 기록 업데이트 (실제 퇴실 시간 기록)
+    const today = now.toISOString().slice(0, 10); // YYYY-MM-DD 형식
+    
+    // 3-1. 기존 out_time 업데이트 (호환성 유지)
     const updateAttendanceSqlRaw = process.env.UPDATE_ATTENDANCE_OUT_TIME_SQL;
     const updateAttendanceSql = normalizePlaceholders(updateAttendanceSqlRaw);
-    if (!updateAttendanceSql) {
-      throw new Error('UPDATE_ATTENDANCE_OUT_TIME_SQL 환경변수가 설정되지 않았습니다.');
+    if (updateAttendanceSql) {
+      await sql.query(updateAttendanceSql, [actualOutTime, studentId, today]);
+      console.log('✅ 출석 기록 out_time 업데이트 완료');
     }
     
-    const today = now.toISOString().slice(0, 10); // YYYY-MM-DD 형식
-    await sql.query(updateAttendanceSql, [actualOutTime, studentId, today]);
+    // 3-2. actual_out_time 업데이트 (실제 퇴실 시간)
+    try {
+      // student_attendance 테이블에 actual_out_time 업데이트
+      const updateActualOutTimeSql = `
+        UPDATE student_attendance 
+        SET actual_out_time = $1 
+        WHERE student_id = $2 
+          AND DATE(in_time) = $3 
+          AND out_time IS NOT NULL 
+          AND actual_out_time IS NULL
+        ORDER BY in_time DESC 
+        LIMIT 1
+      `;
+      
+      const result = await sql.query(updateActualOutTimeSql, [actualOutTime, studentId, today]);
+      console.log(`✅ 출석 기록 actual_out_time 업데이트 완료: ${actualOutTime}`);
+      
+      // 시간 차이 분석
+      if (currentRoom.out_time) {
+        const expectedTime = new Date(currentRoom.out_time);
+        const actualTime = new Date(actualOutTime);
+        const diffMinutes = Math.round((actualTime.getTime() - expectedTime.getTime()) / (1000 * 60));
+        
+        if (diffMinutes > 0) {
+          console.log(`⏰ 연장 수업: ${diffMinutes}분 초과`);
+        } else if (diffMinutes < 0) {
+          console.log(`⏰ 조기 퇴실: ${Math.abs(diffMinutes)}분 일찍`);
+        } else {
+          console.log(`⏰ 정시 퇴실`);
+        }
+      }
+      
+    } catch (error) {
+      console.error('❌ actual_out_time 업데이트 오류:', error);
+      // 오류가 있어도 퇴실 처리는 계속 진행
+    }
 
     // 4. 방 정보 초기화 (다음 학생을 위해)
     let clearRoomSqlRaw: string | undefined;

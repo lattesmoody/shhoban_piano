@@ -15,7 +15,8 @@ export type DrumRow = {
   student_id: string | null;
   student_grade: number | null;
   in_time: string | null;
-  out_time: string | null;
+  out_time: string | null;          // 퇴실 예정 시간 (입실 시 계산)
+  actual_out_time: string | null;   // 실제 퇴실 시점 시간 (퇴실 버튼 클릭 시)
   turns: number;
   is_enabled: boolean;
   usage_yn: number;
