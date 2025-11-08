@@ -149,22 +149,51 @@ export async function processEntrance(studentId: string): Promise<string> {
 
     const calculatedOutTime = await calculateOutTime();
 
-    // 3) 중복 입실 체크: 이미 입실한 학생인지 확인
+    // 3) 중복 입실 체크: 모든 방 타입에서 이미 입실한 학생인지 확인
     const isDrum = lessonCode === 3;
-    const checkEntranceSqlRaw = isDrum
-      ? process.env.DRUM_CHECK_STUDENT_ENTRANCE_SQL
-      : process.env.PRACTICE_CHECK_STUDENT_ENTRANCE_SQL;
-    const checkEntranceSql = normalizePlaceholderForEnv(checkEntranceSqlRaw);
     
-    if (!checkEntranceSql) {
-      const sqlType = isDrum ? 'DRUM_CHECK_STUDENT_ENTRANCE_SQL' : 'PRACTICE_CHECK_STUDENT_ENTRANCE_SQL';
-      throw new Error(`${sqlType} 환경변수가 설정되지 않았습니다.`);
+    // 모든 방 타입에서 중복 입실 체크
+    let alreadyEnteredRooms: any[] = [];
+    
+    // 연습실 체크
+    const practiceCheckSqlRaw = process.env.PRACTICE_CHECK_STUDENT_ENTRANCE_SQL;
+    const practiceCheckSql = normalizePlaceholderForEnv(practiceCheckSqlRaw);
+    if (practiceCheckSql) {
+      const practiceRes: any = await (sql as any).query(practiceCheckSql, [studentId]);
+      const practiceEntered = Array.isArray(practiceRes) ? practiceRes : (practiceRes?.rows || []);
+      practiceEntered.forEach((room: any) => {
+        if (room) alreadyEnteredRooms.push({...room, roomType: 'practice'});
+      });
     }
     
-    if (checkEntranceSql) {
-      const entranceRes: any = await (sql as any).query(checkEntranceSql, [studentId]);
-      const alreadyEntered = Array.isArray(entranceRes) ? entranceRes[0] : (entranceRes?.rows?.[0] ?? null);
-      if (alreadyEntered) return '이미 수강 중인 학생입니다.';
+    // 유치부실 체크 (환경 변수가 있는 경우)
+    const kinderCheckSqlRaw = process.env.KINDER_CHECK_STUDENT_ENTRANCE_SQL;
+    const kinderCheckSql = normalizePlaceholderForEnv(kinderCheckSqlRaw);
+    if (kinderCheckSql) {
+      const kinderRes: any = await (sql as any).query(kinderCheckSql, [studentId]);
+      const kinderEntered = Array.isArray(kinderRes) ? kinderRes : (kinderRes?.rows || []);
+      kinderEntered.forEach((room: any) => {
+        if (room) alreadyEnteredRooms.push({...room, roomType: 'kinder'});
+      });
+    }
+    
+    // 드럼실 체크
+    const drumCheckSqlRaw = process.env.DRUM_CHECK_STUDENT_ENTRANCE_SQL;
+    const drumCheckSql = normalizePlaceholderForEnv(drumCheckSqlRaw);
+    if (drumCheckSql) {
+      const drumRes: any = await (sql as any).query(drumCheckSql, [studentId]);
+      const drumEntered = Array.isArray(drumRes) ? drumRes : (drumRes?.rows || []);
+      drumEntered.forEach((room: any) => {
+        if (room) alreadyEnteredRooms.push({...room, roomType: 'drum'});
+      });
+    }
+    
+    if (alreadyEnteredRooms.length > 0) {
+      const roomInfo = alreadyEnteredRooms.map((room: any) => 
+        `${room.roomType === 'practice' ? '연습실' : room.roomType === 'kinder' ? '유치부실' : '드럼실'} ${room.room_no}번`
+      ).join(', ');
+      
+      return `이미 수강 중인 학생입니다.\n현재 입실: ${roomInfo}\n\n먼저 퇴실 처리 후 다시 입실해주세요.`;
     }
 
     // 4) 방 배정: 레슨에 따라 테이블 결정 (1:피아노+이론,2:피아노+드럼,3:드럼,4:피아노)

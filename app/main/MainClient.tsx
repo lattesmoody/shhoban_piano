@@ -345,6 +345,13 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
               />
               <button className="px-4 py-6 text-2xl font-bold text-white bg-orange-500 rounded-lg hover:bg-orange-600" onClick={onEntrance}>입실</button>
               
+              <button 
+                className="px-4 py-6 text-2xl font-bold text-black bg-yellow-400 border-4 border-yellow-500 rounded-lg hover:bg-yellow-500 hover:border-yellow-600 transition-colors" 
+                onClick={onExit}
+              >
+                퇴실
+              </button>
+              
               {/* 개발 모드 테스트 도구 - 필요시 수동으로 활성화 */}
               {/* {process.env.NODE_ENV === 'development' && <TestTools />} */}
             </div>
@@ -731,6 +738,28 @@ async function onEntrance() {
     if (res.ok) location.reload();
   } catch (e) {
     alert('처리 중 오류가 발생했습니다.');
+  }
+}
+
+async function onExit() {
+  try {
+    const studentId = window.prompt('퇴실할 수강생 고유번호를 입력하세요!')?.trim();
+    if (!studentId) return;
+    
+    const confirmed = confirm(`수강생 ${studentId}번을 퇴실 처리하시겠습니까?`);
+    if (!confirmed) return;
+    
+    const res = await fetch('/api/process-exit', { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify({ studentId }) 
+    });
+    const text = await res.text();
+    alert(text || '퇴실 처리되었습니다.');
+    if (res.ok) location.reload();
+  } catch (e) {
+    console.error('퇴실 처리 오류:', e);
+    alert('퇴실 처리 중 오류가 발생했습니다.');
   }
 }
 
