@@ -196,6 +196,8 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
       alert('삭제 중 오류가 발생했습니다.');
     }
   };
+  
+  // 현재 시각 표시용 타이머
   useEffect(() => {
     const timer = setInterval(() => {
       const now = new Date();
@@ -208,6 +210,16 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
       setCurrentTime(formattedTime);
     }, 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  // 30초마다 자동 새로고침
+  useEffect(() => {
+    const refreshInterval = setInterval(() => {
+      console.log('🔄 자동 새로고침 (30초)');
+      window.location.reload();
+    }, 30000); // 30초 = 30000ms
+    
+    return () => clearInterval(refreshInterval);
   }, []);
 
 
