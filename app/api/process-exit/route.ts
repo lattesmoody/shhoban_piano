@@ -218,7 +218,7 @@ export async function POST(request: NextRequest) {
       const dayCode = ((now.getDay() + 6) % 7) + 1; // 월=1..일=7
       const courseQuery = normalizePlaceholders(process.env.SELECT_STUDENT_COURSE_BY_DAY_SQL);
       if (courseQuery) {
-        const courseResult = await sql.query(courseQuery, [studentId, dayCode]);
+        const courseResult: any = await sql.query(courseQuery, [studentId, dayCode]);
         const course = Array.isArray(courseResult) ? courseResult[0] : (courseResult?.rows?.[0] ?? null);
         
         if (course && Number(course.lesson_code) === 1) {
@@ -228,7 +228,7 @@ export async function POST(request: NextRequest) {
           // 오늘 출석 기록 조회
           const attendanceQuery = normalizePlaceholders(process.env.SELECT_ATTENDANCE_BY_DATE_SQL);
           if (attendanceQuery) {
-            const attendanceResult = await sql.query(attendanceQuery, [today]);
+            const attendanceResult: any = await sql.query(attendanceQuery, [today]);
             const allAttendance = Array.isArray(attendanceResult) ? attendanceResult : (attendanceResult?.rows || []);
             const todayAttendance = allAttendance.filter((record: any) => record.student_id === studentId);
             
@@ -257,14 +257,14 @@ export async function POST(request: NextRequest) {
             // 학생 정보 조회
             const studentQuery = normalizePlaceholders(process.env.SELECT_STUDENT_BY_ID_SQL);
             if (studentQuery) {
-              const studentResult = await sql.query(studentQuery, [studentId]);
+              const studentResult: any = await sql.query(studentQuery, [studentId]);
               const student = Array.isArray(studentResult) ? studentResult[0] : (studentResult?.rows?.[0] ?? null);
               
               if (student) {
                 // 학년별 피아노 시간 조회
                 const classTimeQuery = normalizePlaceholders(process.env.SELECT_CLASS_TIME_SETTINGS_SQL);
                 if (classTimeQuery) {
-                  const classTimeResult = await sql.query(classTimeQuery);
+                  const classTimeResult: any = await sql.query(classTimeQuery);
                   const classTimeSettings = Array.isArray(classTimeResult) ? classTimeResult : (classTimeResult?.rows || []);
                   
                   // 학년 매핑
@@ -291,7 +291,7 @@ export async function POST(request: NextRequest) {
                     // 이론실 빈 방 찾기
                     const theoryRoomQuery = normalizePlaceholders(process.env.THEORY_FIND_EMPTY_ROOM_SQL);
                     if (theoryRoomQuery) {
-                      const theoryRoomResult = await sql.query(theoryRoomQuery);
+                      const theoryRoomResult: any = await sql.query(theoryRoomQuery);
                       const theoryRoom = Array.isArray(theoryRoomResult) ? theoryRoomResult[0] : (theoryRoomResult?.rows?.[0] ?? null);
                       
                       if (theoryRoom) {
@@ -347,7 +347,7 @@ export async function POST(request: NextRequest) {
         const dayCode = ((now.getDay() + 6) % 7) + 1; // 월=1..일=7
         const courseQuery = normalizePlaceholders(process.env.SELECT_STUDENT_COURSE_BY_DAY_SQL);
         if (courseQuery) {
-          const courseResult = await sql.query(courseQuery, [studentId, dayCode]);
+          const courseResult: any = await sql.query(courseQuery, [studentId, dayCode]);
           const course = Array.isArray(courseResult) ? courseResult[0] : (courseResult?.rows?.[0] ?? null);
           
           if (course && Number(course.lesson_code) === 2) {
@@ -357,7 +357,7 @@ export async function POST(request: NextRequest) {
             // 오늘 출석 기록 조회
             const attendanceQuery = normalizePlaceholders(process.env.SELECT_ATTENDANCE_BY_DATE_SQL);
             if (attendanceQuery) {
-              const attendanceResult = await sql.query(attendanceQuery, [today]);
+              const attendanceResult: any = await sql.query(attendanceQuery, [today]);
               const allAttendance = Array.isArray(attendanceResult) ? attendanceResult : (attendanceResult?.rows || []);
               const todayAttendance = allAttendance.filter((record: any) => record.student_id === studentId);
               
@@ -386,14 +386,14 @@ export async function POST(request: NextRequest) {
               // 학생 정보 조회
               const studentQuery = normalizePlaceholders(process.env.SELECT_STUDENT_BY_ID_SQL);
               if (studentQuery) {
-                const studentResult = await sql.query(studentQuery, [studentId]);
+                const studentResult: any = await sql.query(studentQuery, [studentId]);
                 const student = Array.isArray(studentResult) ? studentResult[0] : (studentResult?.rows?.[0] ?? null);
                 
                 if (student) {
                   // 학년별 드럼 시간 조회
                   const classTimeQuery = normalizePlaceholders(process.env.SELECT_CLASS_TIME_SETTINGS_SQL);
                   if (classTimeQuery) {
-                    const classTimeResult = await sql.query(classTimeQuery);
+                    const classTimeResult: any = await sql.query(classTimeQuery);
                     const classTimeSettings = Array.isArray(classTimeResult) ? classTimeResult : (classTimeResult?.rows || []);
                     
                     // 학년 매핑
@@ -420,7 +420,7 @@ export async function POST(request: NextRequest) {
                       // 연습실 빈 방 찾기
                       const practiceRoomQuery = normalizePlaceholders(process.env.PRACTICE_FIND_EMPTY_ROOM_SQL);
                       if (practiceRoomQuery) {
-                        const practiceRoomResult = await sql.query(practiceRoomQuery);
+                        const practiceRoomResult: any = await sql.query(practiceRoomQuery);
                         const practiceRoom = Array.isArray(practiceRoomResult) ? practiceRoomResult[0] : (practiceRoomResult?.rows?.[0] ?? null);
                         
                         if (practiceRoom) {
