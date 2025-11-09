@@ -8,6 +8,12 @@ import {
   selectDrumRoomForExit,
   updateActualOutTime,
 } from '@/app/lib/sql/maps/exitQueries';
+import {
+  selectWaitingQueue,
+  removeFromWaitingQueue,
+  reorderWaitingQueue,
+} from '@/app/lib/sql/maps/waitingQueueQueries';
+import { processEntrance } from '@/app/main/actions';
 
 const roomSchema = z.number().int().min(1).max(9999);
 
@@ -49,12 +55,35 @@ export async function deleteStatus(roomNo: number) {
     await deleteDrumStatus(sql, parsed.data);
     console.log('✅ 드럼실 초기화 완료');
     
+    // 4. 대기열 확인 및 자동 입실 처리
+    console.log('\n🔍 드럼 대기열 확인 중...');
+    try {
+      const drumQueue = await selectWaitingQueue(sql, 'drum');
+      
+      if (drumQueue && drumQueue.length > 0) {
+        // 대기열의 첫 번째 학생
+        const firstInQueue = drumQueue[0];
+        console.log(`👤 대기열 첫 번째 학생: ${firstInQueue.student_name} (ID: ${firstInQueue.student_id})`);
+        
+        // 자동 입실 처리
+        console.log('🚪 자동 입실 처리 중...');
+        const entranceResult = await processEntrance(firstInQueue.student_id);
+        console.log(`✅ 자동 입실 완료: ${entranceResult}`);
+      } else {
+        console.log('ℹ️ 드럼 대기열이 비어있습니다.');
+      }
+    } catch (queueError) {
+      console.error('⚠️ 대기열 처리 중 오류 (계속 진행):', queueError);
+      // 대기열 처리 실패해도 퇴실은 완료되었으므로 오류를 throw하지 않음
+    }
+    
   } catch (error) {
     console.error('❌ 퇴실 처리 오류:', error);
     throw error;
   }
   
   revalidatePath('/drumroom_manage');
+  revalidatePath('/main'); // 메인 페이지도 새로고침
   return { ok: true } as const;
 }
 
