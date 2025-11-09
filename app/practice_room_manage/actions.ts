@@ -10,6 +10,10 @@ import {
   setAllEmpty,
   setAllLecture,
 } from '@/app/lib/sql/maps/practiceRoomQueries';
+import {
+  selectPracticeRoomForExit,
+  updateActualOutTime,
+} from '@/app/lib/sql/maps/exitQueries';
 
 const roomSchema = z.number().int().min(1).max(9999);
 
@@ -23,7 +27,36 @@ export async function deleteStatus(roomNo: number) {
   const parsed = roomSchema.safeParse(Number(roomNo));
   if (!parsed.success) throw new Error('잘못된 연습실 번호입니다.');
   const sql = getSql();
-  await deletePracticeStatus(sql, parsed.data);
+  
+  console.log(`\n🔄 연습실 ${parsed.data}번 퇴실 처리 시작...`);
+  
+  try {
+    // 1. 현재 방 상태 조회
+    const roomData = await selectPracticeRoomForExit(sql, parsed.data);
+    
+    if (roomData && roomData.student_id) {
+      console.log(`📊 방 정보: 학생ID=${roomData.student_id}, 이름=${roomData.student_name}`);
+      
+      // 2. student_attendance 테이블에 actual_out_time 업데이트
+      const now = new Date();
+      const today = now.toISOString().slice(0, 10);
+      
+      console.log(`📝 출석 기록 업데이트: actual_out_time=${now.toISOString()}`);
+      await updateActualOutTime(sql, now.toISOString(), roomData.student_id, today);
+      console.log('✅ 출석 기록 actual_out_time 업데이트 완료');
+    } else {
+      console.log('ℹ️ 빈 방이므로 출석 기록 업데이트 불필요');
+    }
+    
+    // 3. 방 초기화
+    await deletePracticeStatus(sql, parsed.data);
+    console.log('✅ 연습실 초기화 완료');
+    
+  } catch (error) {
+    console.error('❌ 퇴실 처리 오류:', error);
+    throw error;
+  }
+  
   revalidatePath('/practice_room_manage');
   return { ok: true } as const;
 }

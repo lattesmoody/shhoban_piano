@@ -138,6 +138,8 @@ export async function processEntrance(studentId: string): Promise<string> {
         
         // 오늘 출석 기록 확인 (중도입실 판단)
         const today = normalizedInTime.toISOString().slice(0, 10); // YYYY-MM-DD
+        console.log(`📅 중도입실 체크: 날짜=${today}, 학생ID=${studentId}`);
+        
         try {
           const attendanceSql = normalizePlaceholderForEnv(process.env.SELECT_ATTENDANCE_BY_DATE_SQL);
           if (attendanceSql) {
@@ -145,35 +147,47 @@ export async function processEntrance(studentId: string): Promise<string> {
             const allAttendance = Array.isArray(attendanceResult) ? attendanceResult : (attendanceResult?.rows || []);
             const todayAttendance = allAttendance.filter((record: any) => record.student_id === studentId);
             
-            // 완료된 세션들의 총 시간 계산 - actual_out_time 우선, 없으면 out_time 사용
+            console.log(`📊 오늘 출석 기록: 전체=${allAttendance.length}개, 해당학생=${todayAttendance.length}개`);
+            if (todayAttendance.length > 0) {
+              console.log('📝 해당 학생 출석 기록:', JSON.stringify(todayAttendance, null, 2));
+            }
+            
+            // 완료된 세션들의 총 시간 계산 - actual_out_time만 확인
             const completedSessions = todayAttendance.filter((record: any) => {
-              // 실제 퇴실 시간이 있으면 완료된 세션으로 간주
-              if (record.actual_out_time) {
-                return true;
-              }
-              // 실제 퇴실 시간이 없지만 out_time이 있는 경우 (호환성)
-              return record.out_time !== null;
+              // 실제 퇴실 시간(actual_out_time)이 있어야만 완료된 세션으로 간주
+              // out_time은 입실 시 자동 계산되므로 완료 여부 판단에 사용하면 안됨
+              const hasActualOutTime = record.actual_out_time !== null && record.actual_out_time !== undefined;
+              console.log(`  - 레코드 ${record.attendance_num}: actual_out_time=${record.actual_out_time}, 완료=${hasActualOutTime}`);
+              return hasActualOutTime;
             });
+            
+            console.log(`✅ 완료된 세션: ${completedSessions.length}개`);
             let totalAttendedMinutes = 0;
             
             completedSessions.forEach((record: any) => {
-              if (record.in_time && (record.actual_out_time || record.out_time)) {
+              // completedSessions는 actual_out_time이 있는 것만 필터링됨
+              if (record.in_time && record.actual_out_time) {
                 const inTime = new Date(record.in_time);
+                const outTime = new Date(record.actual_out_time);
                 
-                // 실제 퇴실 시간이 있으면 우선 사용, 없으면 예정 퇴실 시간 사용
-                let outTime: Date;
-                if (record.actual_out_time) {
-                  outTime = new Date(record.actual_out_time);
-                  console.log(`실제 퇴실 시간 사용: ${record.actual_out_time}`);
-                } else {
-                  outTime = new Date(record.out_time);
-                  console.log(`예정 퇴실 시간 사용: ${record.out_time} (actual_out_time 없음)`);
-                }
+                console.log(`📊 시간 계산 상세:`);
+                console.log(`   - in_time (원본): ${record.in_time}`);
+                console.log(`   - in_time (파싱): ${inTime.toISOString()}`);
+                console.log(`   - actual_out_time (원본): ${record.actual_out_time}`);
+                console.log(`   - actual_out_time (파싱): ${outTime.toISOString()}`);
                 
                 const durationMinutes = Math.floor((outTime.getTime() - inTime.getTime()) / (1000 * 60));
+                console.log(`   - 계산된 시간: ${durationMinutes}분`);
+                
+                if (durationMinutes < 0) {
+                  console.error(`❌ 음수 시간 발견! in_time이 out_time보다 늦습니다.`);
+                  console.error(`   건너뛰고 다음 레코드로 이동...`);
+                  return; // 음수 시간은 건너뛰기
+                }
+                
                 totalAttendedMinutes += durationMinutes;
                 
-                console.log(`세션 시간: ${record.in_time} ~ ${outTime.toISOString()} = ${durationMinutes}분`);
+                console.log(`✅ 완료된 세션: ${inTime.toISOString()} ~ ${outTime.toISOString()} = ${durationMinutes}분`);
               }
             });
             
@@ -371,11 +385,12 @@ export async function processEntrance(studentId: string): Promise<string> {
     }
 
     // 출석 기록 생성
+    console.log('\n📝 출석 기록 생성 시작...');
     try {
       const lessonNameMap: Record<number,string> = {1:'피아노+이론',2:'피아노+드럼',3:'드럼',4:'피아노'};
       const lessonName = lessonNameMap[lessonCode] || '수업';
       
-      await insertAttendance(sql, {
+      const attendanceData = {
         attendance_date: normalizedInTime.toISOString().slice(0, 10), // YYYY-MM-DD 형식
         student_id: studentId,
         student_name: student.student_name,
@@ -385,16 +400,16 @@ export async function processEntrance(studentId: string): Promise<string> {
         out_time: calculatedOutTime.toISOString(),
         actual_out_time: null, // 입실 시에는 null, 퇴실 시에 실제 시간 기록
         remark: `${room.room_no}번 방`
-      });
+      };
       
-      console.log('출석 기록 생성 완료:', {
-        student_name: student.student_name,
-        course_name: lessonName,
-        in_time: normalizedInTime.toISOString(),
-        out_time: calculatedOutTime.toISOString()
-      });
+      console.log('📋 출석 데이터:', JSON.stringify(attendanceData, null, 2));
+      
+      await insertAttendance(sql, attendanceData);
+      
+      console.log('✅ 출석 기록 생성 완료!');
     } catch (error) {
-      console.error('출석 기록 생성 실패:', error);
+      console.error('❌ 출석 기록 생성 실패:', error);
+      console.error('에러 상세:', error instanceof Error ? error.message : String(error));
       // 출석 기록 생성 실패해도 입실은 성공으로 처리
     }
 
@@ -406,26 +421,34 @@ export async function processEntrance(studentId: string): Promise<string> {
     const today = normalizedInTime.toISOString().slice(0, 10); // YYYY-MM-DD
     let todayAttendance: any[] = [];
     
+    console.log(`\n🔔 입실 메시지 생성: 날짜=${today}, 학생ID=${studentId}`);
+    
     try {
       const attendanceSql = normalizePlaceholderForEnv(process.env.SELECT_ATTENDANCE_BY_DATE_SQL);
       if (attendanceSql) {
         const attendanceResult = await (sql as any).query(attendanceSql, [today]);
         const allAttendance = Array.isArray(attendanceResult) ? attendanceResult : (attendanceResult?.rows || []);
         todayAttendance = allAttendance.filter((record: any) => record.student_id === studentId);
+        
+        console.log(`📊 메시지용 출석 기록: 전체=${allAttendance.length}개, 해당학생=${todayAttendance.length}개`);
+        if (todayAttendance.length > 0) {
+          console.log('📝 해당 학생 출석 기록:', JSON.stringify(todayAttendance, null, 2));
+        }
       }
     } catch (error) {
       console.error('출석 기록 조회 실패:', error);
     }
     
-    // 완료된 세션 (실제 퇴실한 기록) 확인 - actual_out_time 우선, 없으면 out_time 사용
+    // 완료된 세션 (실제 퇴실한 기록) 확인 - actual_out_time만 확인
     const completedSessions = todayAttendance.filter((record: any) => {
-      // 실제 퇴실 시간이 있으면 완료된 세션으로 간주
-      if (record.actual_out_time) {
-        return true;
-      }
-      // 실제 퇴실 시간이 없지만 out_time이 있는 경우 (호환성)
-      return record.out_time !== null;
+      // 실제 퇴실 시간(actual_out_time)이 있어야만 완료된 세션으로 간주
+      // out_time은 입실 시 자동 계산되므로 완료 여부 판단에 사용하면 안됨
+      const hasActualOutTime = record.actual_out_time !== null && record.actual_out_time !== undefined;
+      console.log(`  - 메시지용 레코드 ${record.attendance_num}: actual_out_time=${record.actual_out_time}, 완료=${hasActualOutTime}`);
+      return hasActualOutTime;
     });
+    
+    console.log(`✅ 메시지용 완료된 세션: ${completedSessions.length}개`);
     
     if (completedSessions.length > 0) {
       // 중도입실 - 이전에 퇴실한 기록이 있음
@@ -433,19 +456,26 @@ export async function processEntrance(studentId: string): Promise<string> {
       // 총 진행된 시간 계산 (실제 퇴실 시간 우선 사용)
       let totalAttendedMinutes = 0;
       completedSessions.forEach((record: any) => {
-        if (record.in_time && (record.actual_out_time || record.out_time)) {
+        // completedSessions는 actual_out_time이 있는 것만 필터링됨
+        if (record.in_time && record.actual_out_time) {
           const inTime = new Date(record.in_time);
+          const outTime = new Date(record.actual_out_time);
           
-          // 실제 퇴실 시간이 있으면 우선 사용, 없으면 예정 퇴실 시간 사용
-          let outTime: Date;
-          if (record.actual_out_time) {
-            outTime = new Date(record.actual_out_time);
-          } else {
-            outTime = new Date(record.out_time);
-          }
+          console.log(`📊 메시지 시간 계산:`);
+          console.log(`   - in_time: ${record.in_time} → ${inTime.toISOString()}`);
+          console.log(`   - actual_out_time: ${record.actual_out_time} → ${outTime.toISOString()}`);
           
           const durationMinutes = Math.floor((outTime.getTime() - inTime.getTime()) / (1000 * 60));
+          console.log(`   - 계산: ${durationMinutes}분`);
+          
+          if (durationMinutes < 0) {
+            console.error(`❌ 음수 시간! 건너뛰기...`);
+            return;
+          }
+          
           totalAttendedMinutes += durationMinutes;
+          
+          console.log(`✅ 완료된 세션: ${inTime.toISOString()} ~ ${outTime.toISOString()} = ${durationMinutes}분`);
         }
       });
       
