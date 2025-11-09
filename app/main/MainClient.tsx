@@ -355,7 +355,9 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
                       <li>◆ : 피아노+드럼</li>
                       <li>■ : 드럼</li>
                       <li>▲ : 피아노</li>
-                      <button className="px-6 py-2 font-bold text-white bg-blue-700 rounded-md">이론실</button>
+                      <Link href="/theoryroom_manage">
+                        <button className="px-6 py-2 font-bold text-white bg-blue-700 rounded-md hover:bg-blue-800 transition-colors">이론실</button>
+                      </Link>
                     </ul>
                   </div>
                 </div>
