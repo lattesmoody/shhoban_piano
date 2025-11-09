@@ -39,7 +39,7 @@ export async function processEntrance(studentId: string): Promise<string> {
     }
     const courseRes: any = await (sql as any).query(selCourseSql, [studentId, dayCode]);
     const course = Array.isArray(courseRes) ? courseRes[0] : (courseRes?.rows?.[0] ?? null);
-    if (!course) return `${student.student_name}님 반갑습니다. 오늘은 수업이 없습니다.`;
+    if (!course) return `${student.student_name}님 반갑습니다.\n오늘은 수업이 없습니다.`;
 
     const lessonCode: number = Number(course.lesson_code);
     const now = new Date();
@@ -332,10 +332,10 @@ export async function processEntrance(studentId: string): Promise<string> {
           queue_type: queueType
         });
         
-        return `${student.student_name}님 반갑습니다. 현재 배정 가능한 방이 없어 대기열에 등록되었습니다.`;
+        return `${student.student_name}님 반갑습니다.\n현재 배정 가능한 방이 없어 대기열에 등록되었습니다.`;
       } catch (error) {
         console.error('Failed to add to waiting queue:', error);
-        return `${student.student_name}님 반갑습니다. 현재 배정 가능한 방이 없습니다.`;
+        return `${student.student_name}님 반갑습니다.\n현재 배정 가능한 방이 없습니다.`;
       }
     }
 
@@ -493,7 +493,7 @@ export async function processEntrance(studentId: string): Promise<string> {
     } else {
       // 일반입실 - 오늘 첫 입실
       const roomTypeKorean = isDrum ? '드럼실' : (isKindergarten ? '유치부실' : '연습실');
-      return `${student.student_name}님 반갑습니다. 오늘의 학습은 "${lessonName}" 입니다. (${roomTypeKorean} ${room.room_no}번)`;
+      return `${student.student_name}님 반갑습니다.\n오늘의 학습은 "${lessonName}" 입니다. (${roomTypeKorean} ${room.room_no}번)`;
     }
   } catch (e: any) {
     console.error('processEntrance error', e);
