@@ -616,49 +616,63 @@ function WaitingList({
     practiceRows.forEach(room => {
       if (room.student_id && room.in_time) {
         try {
-          const inDate = new Date(String(room.in_time));
-          if (!Number.isNaN(inDate.getTime())) {
-            const normalizedInTime = normalizeInTime(inDate);
-            
-            // 학생별 수업 시간 계산
-            const studentInfo = studentCourseInfos.find(info => info.student_id === room.student_id);
-            let classDuration = 35; // 기본값
-            if (studentInfo) {
-              classDuration = getStudentClassDuration(room.student_id!, studentInfo.lesson_code, classTimeSettings, studentCourseInfos);
-            }
-            
-            const expectedExitTime = new Date(normalizedInTime.getTime() + classDuration * 60 * 1000);
-            
-            // 해당 학생의 담당 강사 정보 조회
-            let instructorId = '1'; // 기본값
-            let instructorName = '강사';
-            
-            // 실제 학생 데이터에서 담당 강사 정보 가져오기
-            const instructorInfo = studentCourseInfos.find(info => info.student_id === room.student_id);
-            if (instructorInfo && instructorInfo.member_id && instructorInfo.member_name) {
-              instructorId = instructorInfo.member_id;
-              instructorName = instructorInfo.member_name;
-            } else {
-              // 담당 강사 정보가 없으면 방 번호에 따라 임시 배정
-              if (room.room_no <= 7) {
-                instructorId = '1';
-                instructorName = '정영롱';
-              } else if (room.room_no <= 14) {
-                instructorId = '2';
-                instructorName = '김선생';
-              } else {
-                instructorId = '3';
-                instructorName = '이선생';
+          // 퇴실 시간 우선순위: actual_out_time > out_time > 계산
+          let expectedExitTime: Date;
+          
+          if (room.actual_out_time) {
+            // 이미 퇴실한 경우
+            expectedExitTime = new Date(String(room.actual_out_time));
+          } else if (room.out_time) {
+            // 예정 퇴실 시간 사용
+            expectedExitTime = new Date(String(room.out_time));
+          } else {
+            // 계산
+            const inDate = new Date(String(room.in_time));
+            if (!Number.isNaN(inDate.getTime())) {
+              const normalizedInTime = normalizeInTime(inDate);
+              
+              // 학생별 수업 시간 계산
+              const studentInfo = studentCourseInfos.find(info => info.student_id === room.student_id);
+              let classDuration = 35; // 기본값
+              if (studentInfo) {
+                classDuration = getStudentClassDuration(room.student_id!, studentInfo.lesson_code, classTimeSettings, studentCourseInfos);
               }
+              
+              expectedExitTime = new Date(normalizedInTime.getTime() + classDuration * 60 * 1000);
+            } else {
+              return; // 시간 파싱 실패 시 건너뛰기
             }
-
-            assignments.push({
-              roomNo: room.room_no,
-              expectedExitTime,
-              instructorColor: getInstructorColor(instructorId),
-              instructorName
-            });
           }
+          
+          // 해당 학생의 담당 강사 정보 조회
+          let instructorId = '1'; // 기본값
+          let instructorName = '강사';
+          
+          // 실제 학생 데이터에서 담당 강사 정보 가져오기
+          const instructorInfo = studentCourseInfos.find(info => info.student_id === room.student_id);
+          if (instructorInfo && instructorInfo.member_id && instructorInfo.member_name) {
+            instructorId = instructorInfo.member_id;
+            instructorName = instructorInfo.member_name;
+          } else {
+            // 담당 강사 정보가 없으면 방 번호에 따라 임시 배정
+            if (room.room_no <= 7) {
+              instructorId = '1';
+              instructorName = '정영롱';
+            } else if (room.room_no <= 14) {
+              instructorId = '2';
+              instructorName = '김선생';
+            } else {
+              instructorId = '3';
+              instructorName = '이선생';
+            }
+          }
+
+          assignments.push({
+            roomNo: room.room_no,
+            expectedExitTime,
+            instructorColor: getInstructorColor(instructorId),
+            instructorName
+          });
         } catch (error) {
           console.error('방 배정 계산 오류:', error);
         }
