@@ -69,9 +69,9 @@ export default async function AdminPage() {
                   }
                 }
                 
-                // 담당 강사 정보 조회
-                let memberName = '강사';
-                let memberId = '1';
+                // 담당 강사 정보 조회 (DB에서 직접 가져오기)
+                let memberName = '미지정';
+                let memberId = '0';
                 if (student.member_id) {
                   try {
                     const memberSql = normalizePlaceholderForEnv(process.env.SELECT_MEMBER_BY_ID_SQL);
@@ -79,14 +79,22 @@ export default async function AdminPage() {
                       const memberRes: any = await (sql as any).query(memberSql, [student.member_id]);
                       const member = Array.isArray(memberRes) ? memberRes[0] : (memberRes?.rows?.[0] ?? null);
                       if (member) {
-                        memberName = member.member_name || '강사';
+                        memberName = member.member_name || student.member_id;
                         memberId = String(member.member_code || student.member_id);
+                      } else {
+                        // member 정보가 없으면 student.member_id를 그대로 사용
+                        memberName = student.member_id;
+                        memberId = student.member_id;
                       }
                     } else {
                       console.warn('SELECT_MEMBER_BY_ID_SQL 환경변수가 설정되지 않았습니다.');
+                      memberName = student.member_id;
+                      memberId = student.member_id;
                     }
                   } catch (error) {
                     console.error(`Error fetching member info for ${student.member_id}:`, error);
+                    memberName = student.member_id;
+                    memberId = student.member_id;
                   }
                 }
 

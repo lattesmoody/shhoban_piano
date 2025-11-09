@@ -653,19 +653,7 @@ function WaitingList({
           if (instructorInfo && instructorInfo.member_id && instructorInfo.member_name) {
             instructorId = instructorInfo.member_id;
             instructorName = instructorInfo.member_name;
-          } else {
-            // 담당 강사 정보가 없으면 방 번호에 따라 임시 배정
-            if (room.room_no <= 7) {
-              instructorId = '1';
-              instructorName = '정영롱';
-            } else if (room.room_no <= 14) {
-              instructorId = '2';
-              instructorName = '김선생';
-            } else {
-              instructorId = '3';
-              instructorName = '이선생';
-            }
-          }
+          } 
 
           assignments.push({
             roomNo: room.room_no,
