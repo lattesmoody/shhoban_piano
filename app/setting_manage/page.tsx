@@ -1,5 +1,6 @@
 import styles from './page.module.css';
 import Link from 'next/link';
+import ResetDailyButton from './ResetDailyButton';
 
 
 // 관리 메뉴 항목 배열
@@ -83,6 +84,9 @@ export default function MainDashboard() {
                   {item}
                 </button>
               </Link>
+            ) : index === 7 ? (
+              // 일일 수강 현황 초기화 버튼 (이중 확인)
+              <ResetDailyButton key={index} className={styles.menuButton} />
             ) : (
               <button key={index} className={styles.menuButton}>
                 {item}
