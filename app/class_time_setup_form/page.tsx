@@ -8,7 +8,7 @@ import styles from './page.module.css';
 
 export const dynamic = 'force-dynamic';
 
-const grades = ['유치부','초등부','중고등부','대회부','연주회부'];
+const grades = ['유치부','초등부','중고등부','대회부','연주회부','신입생','기타'];
 
 export default async function ClassTimeSetupForm({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }){
   const sql = neon(process.env.DATABASE_URL!);
