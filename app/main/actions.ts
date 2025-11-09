@@ -272,7 +272,101 @@ export async function processEntrance(studentId: string): Promise<string> {
     let findEmptySqlRaw: string | undefined;
     let roomType: string;
     
-    if (isDrum) {
+    // 피아노+드럼 과정의 특별 처리
+    const isPianoDrum = lessonCode === 2;
+    
+    if (isPianoDrum && !isKindergarten) {
+      // 피아노+드럼 학생: 피아노 먼저, 연습실 없으면 드럼실
+      console.log('🎹🥁 피아노+드럼 과정 - 우선순위 체크');
+      
+      // 오늘 출석 기록 확인 (드럼 시간을 이미 채웠는지 확인)
+      const today = normalizedInTime.toISOString().slice(0, 10);
+      let hasDrumCompleted = false;
+      
+      try {
+        const attendanceSql = normalizePlaceholderForEnv(process.env.SELECT_ATTENDANCE_BY_DATE_SQL);
+        if (attendanceSql) {
+          const attendanceResult = await (sql as any).query(attendanceSql, [today]);
+          const allAttendance = Array.isArray(attendanceResult) ? attendanceResult : (attendanceResult?.rows || []);
+          const todayAttendance = allAttendance.filter((record: any) => record.student_id === studentId);
+          
+          // 완료된 세션들 (actual_out_time이 있는 것만)
+          const completedSessions = todayAttendance.filter((record: any) => 
+            record.actual_out_time !== null && record.actual_out_time !== undefined
+          );
+          
+          // 총 수강 시간 계산
+          let totalAttendedMinutes = 0;
+          completedSessions.forEach((session: any) => {
+            if (session.in_time && session.actual_out_time) {
+              const inTime = new Date(session.in_time);
+              const outTime = new Date(session.actual_out_time);
+              const duration = Math.floor((outTime.getTime() - inTime.getTime()) / (1000 * 60));
+              if (duration >= 0) {
+                totalAttendedMinutes += duration;
+              }
+            }
+          });
+          
+          // 학년별 드럼 필수 시간 조회
+          const classTimeSettings = await selectClassTimeSettings(sql);
+          let gradeName = '초등부';
+          if (student.student_grade) {
+            switch (Number(student.student_grade)) {
+              case 1: gradeName = '유치부'; break;
+              case 2: gradeName = '초등부'; break;
+              case 3: gradeName = '중고등부'; break;
+              case 4: gradeName = '대회부'; break;
+              case 5: gradeName = '연주회부'; break;
+              case 6: gradeName = '신입생'; break;
+              case 7: gradeName = '기타'; break;
+            }
+          }
+          
+          const setting = classTimeSettings.find(s => s.grade_name === gradeName);
+          const requiredDrumTime = setting?.pd_drum || 20;
+          
+          if (totalAttendedMinutes >= requiredDrumTime) {
+            hasDrumCompleted = true;
+            console.log(`✅ 드럼 시간 완료 (${totalAttendedMinutes}분 >= ${requiredDrumTime}분) - 피아노 연습실로 배정`);
+          } else {
+            console.log(`ℹ️  드럼 시간 부족 (${totalAttendedMinutes}분 / ${requiredDrumTime}분)`);
+          }
+        }
+      } catch (error) {
+        console.error('출석 기록 조회 오류:', error);
+      }
+      
+      if (hasDrumCompleted) {
+        // 드럼 완료 → 피아노 연습실로
+        findEmptySqlRaw = process.env.PRACTICE_FIND_EMPTY_ROOM_SQL;
+        roomType = 'practice';
+        console.log('방 배정 결정: 연습실 (드럼 완료, 피아노 수업)');
+      } else {
+        // 드럼 미완료 → 연습실 먼저 확인
+        const practiceCheckSql = normalizePlaceholderForEnv(process.env.PRACTICE_FIND_EMPTY_ROOM_SQL);
+        if (practiceCheckSql) {
+          const practiceRoomRes: any = await (sql as any).query(practiceCheckSql);
+          const practiceRoom = Array.isArray(practiceRoomRes) ? practiceRoomRes[0] : (practiceRoomRes?.rows?.[0] ?? null);
+          
+          if (practiceRoom) {
+            // 연습실 있음 → 피아노부터
+            findEmptySqlRaw = process.env.PRACTICE_FIND_EMPTY_ROOM_SQL;
+            roomType = 'practice';
+            console.log('방 배정 결정: 연습실 (피아노 먼저)');
+          } else {
+            // 연습실 없음 → 드럼실로
+            findEmptySqlRaw = process.env.DRUM_FIND_EMPTY_ROOM_SQL;
+            roomType = 'drum';
+            console.log('방 배정 결정: 드럼실 (연습실 만실)');
+          }
+        } else {
+          // 쿼리 없으면 기본 연습실
+          findEmptySqlRaw = process.env.PRACTICE_FIND_EMPTY_ROOM_SQL;
+          roomType = 'practice';
+        }
+      }
+    } else if (isDrum) {
       // 드럼 수업 → 드럼실 (유치부든 아니든 드럼 과정이면 드럼실)
       findEmptySqlRaw = process.env.DRUM_FIND_EMPTY_ROOM_SQL;
       roomType = 'drum';
