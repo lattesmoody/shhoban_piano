@@ -437,6 +437,8 @@ function getStudentClassDuration(
       return timeSetting.drum_only || 35;
     case 4: // 피아노
       return timeSetting.piano_only || 35;
+    case 5: // 연습만
+      return timeSetting.practice_only || 50;
     default:
       return 35;
   }

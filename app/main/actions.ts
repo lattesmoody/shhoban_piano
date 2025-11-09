@@ -124,6 +124,9 @@ export async function processEntrance(studentId: string): Promise<string> {
             case 4: // 피아노
               classDuration = setting.piano_only || 35;
               break;
+            case 5: // 연습만
+              classDuration = setting.practice_only || 50;
+              break;
             default:
               classDuration = 35;
               break;
@@ -383,7 +386,7 @@ export async function processEntrance(studentId: string): Promise<string> {
     // 출석 기록 생성
     console.log('\n📝 출석 기록 생성 시작...');
     try {
-      const lessonNameMap: Record<number,string> = {1:'피아노+이론',2:'피아노+드럼',3:'드럼',4:'피아노'};
+      const lessonNameMap: Record<number,string> = {1:'피아노+이론',2:'피아노+드럼',3:'드럼',4:'피아노',5:'연습만'};
       const lessonName = lessonNameMap[lessonCode] || '수업';
       
       const attendanceData = {

@@ -18,7 +18,8 @@ export async function saveClassTimeSettings(formData: FormData): Promise<void> {
       pd_piano: getNum('pd_piano'),
       pd_drum: getNum('pd_drum'),
       drum_only: getNum('drum_only'),
-      piano_only: getNum('piano_only')
+      piano_only: getNum('piano_only'),
+      practice_only: getNum('practice_only')
     };
     await upsertClassTimeSetting(sql, setting);
   }

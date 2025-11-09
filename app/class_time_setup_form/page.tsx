@@ -57,6 +57,7 @@ export default async function ClassTimeSetupForm({ searchParams }: { searchParam
                 <th colSpan={2}>피아노+드럼</th>
                 <th rowSpan={2}>드럼</th>
                 <th rowSpan={2}>피아노</th>
+                <th rowSpan={2}>연습만</th>
               </tr>
               <tr>
                 <th>피아노</th>
@@ -75,6 +76,7 @@ export default async function ClassTimeSetupForm({ searchParams }: { searchParam
                   <td><input name={nameOf(g,'pd_drum')} className={styles.minInput} defaultValue={getVal(g,'pd_drum')} /></td>
                   <td><input name={nameOf(g,'drum_only')} className={styles.minInput} defaultValue={getVal(g,'drum_only')} /></td>
                   <td><input name={nameOf(g,'piano_only')} className={styles.minInput} defaultValue={getVal(g,'piano_only')} /></td>
+                  <td><input name={nameOf(g,'practice_only')} className={styles.minInput} defaultValue={getVal(g,'practice_only')} /></td>
                 </tr>
               ))}
             </tbody>

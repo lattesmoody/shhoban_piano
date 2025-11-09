@@ -48,6 +48,7 @@ export function lessonToCode(lesson: string): number {
     '피아노+드럼': 2,
     '드럼': 3,
     '피아노': 4,
+    '연습만': 5,
   };
   return map[lesson] || 0;
 }
@@ -71,6 +72,7 @@ export function codeToLesson(code: number): string {
     2: '피아노+드럼',
     3: '드럼',
     4: '피아노',
+    5: '연습만',
   };
   return map[code] || '';
 }

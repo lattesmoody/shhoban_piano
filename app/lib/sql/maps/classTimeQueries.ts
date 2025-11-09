@@ -17,6 +17,7 @@ export type ClassTimeSetting = {
   pd_drum: number;    // 피아노+드럼 중 드럼
   drum_only: number;  // 드럼 단일
   piano_only: number; // 피아노 단일
+  practice_only: number; // 연습만
 };
 
 // 전체 조회
@@ -42,6 +43,7 @@ export async function upsertClassTimeSetting(sql: any, setting: ClassTimeSetting
     setting.pd_drum,
     setting.drum_only,
     setting.piano_only,
+    setting.practice_only,
   ]);
 }
 

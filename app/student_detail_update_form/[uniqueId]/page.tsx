@@ -18,7 +18,7 @@ const CourseBlock = ({ index, details, onDetailsChange }: {
   onDetailsChange: (index: number, field: keyof CourseDetail, value: string) => void;
 }) => {
   const daysOfWeek = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'];
-  const lessons = ['피아노+이론', '피아노+드럼', '드럼', '피아노'];
+  const lessons = ['피아노+이론', '피아노+드럼', '드럼', '피아노', '연습만'];
 
   return (
     <div className={styles.courseBlock}>
