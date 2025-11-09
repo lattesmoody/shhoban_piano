@@ -89,8 +89,66 @@ export async function deleteStatus(roomNo: number) {
 
 export async function makeAllEmpty() {
   const sql = getSql();
-  await setAllDrumEmpty(sql);
+  
+  console.log('\n🔄 드럼실 전체 공실 처리 시작...');
+  
+  try {
+    // 1. 모든 방 비우기 전에 입실 중인 학생들의 actual_out_time 업데이트
+    const allRooms = await sql`
+      SELECT room_no, student_id, student_name 
+      FROM drum_room_status 
+      WHERE student_id IS NOT NULL
+    `;
+    
+    console.log(`📊 현재 입실 중인 드럼실: ${allRooms.length}개`);
+    
+    const now = new Date();
+    const kstOffset = 9 * 60 * 60 * 1000;
+    const kstTime = new Date(now.getTime() + kstOffset);
+    const today = kstTime.toISOString().slice(0, 10);
+    
+    for (const room of allRooms) {
+      if (room.student_id) {
+        console.log(`  방 ${room.room_no}: ${room.student_name} - actual_out_time 업데이트`);
+        await updateActualOutTime(sql, kstTime.toISOString(), room.student_id, today);
+      }
+    }
+    
+    // 2. 모든 방 비우기
+    await setAllDrumEmpty(sql);
+    console.log('✅ 드럼실 전체 공실 처리 완료');
+    
+    // 3. 대기열 확인 및 자동 입실 처리
+    console.log('\n🔍 드럼 대기열 확인 중...');
+    try {
+      const drumQueue = await selectWaitingQueue(sql, 'drum');
+      
+      if (drumQueue && drumQueue.length > 0) {
+        console.log(`👥 드럼 대기열: ${drumQueue.length}명`);
+        
+        for (const student of drumQueue) {
+          console.log(`\n🚪 ${student.student_name} 자동 입실 시도...`);
+          try {
+            const entranceResult = await processEntrance(student.student_id);
+            console.log(`✅ ${student.student_name}: ${entranceResult}`);
+          } catch (error) {
+            console.error(`⚠️ ${student.student_name} 입실 실패:`, error);
+          }
+        }
+      } else {
+        console.log('ℹ️ 드럼 대기열이 비어있습니다.');
+      }
+    } catch (queueError) {
+      console.error('⚠️ 대기열 처리 중 오류 (계속 진행):', queueError);
+    }
+    
+  } catch (error) {
+    console.error('❌ 전체 공실 처리 오류:', error);
+    throw error;
+  }
+  
   revalidatePath('/drumroom_manage');
+  revalidatePath('/main');
   return { ok: true } as const;
 }
 
