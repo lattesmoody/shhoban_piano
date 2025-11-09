@@ -334,6 +334,7 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
           <nav className="flex items-center justify-center space-x-0">
             <Link href="/main" className="px-6 py-1 text-sm hover:text-gray-300 bg-gray-800 hover:bg-gray-700 transition-colors">Main</Link>
             <Link href="/setting_manage" className="px-6 py-1 text-sm hover:text-gray-300 bg-gray-800 hover:bg-gray-700 transition-colors">Manage</Link>
+            <Link href="/mypage" className="px-6 py-1 text-sm hover:text-gray-300 bg-gray-800 hover:bg-gray-700 transition-colors">MyPage</Link>
             <form action={logoutAction} className="inline">
               <button type="submit" className="px-6 py-1 text-sm hover:text-gray-300 bg-gray-800 hover:bg-gray-700 transition-colors">Logout</button>
             </form>
