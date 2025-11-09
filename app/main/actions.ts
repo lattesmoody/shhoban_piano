@@ -162,18 +162,25 @@ export async function processEntrance(studentId: string): Promise<string> {
             });
             
             console.log(`✅ 완료된 세션: ${completedSessions.length}개`);
-            let totalAttendedMinutes = 0;
             
-            completedSessions.forEach((record: any) => {
-              // completedSessions는 actual_out_time이 있는 것만 필터링됨
-              if (record.in_time && record.actual_out_time) {
-                const inTime = new Date(record.in_time);
-                const outTime = new Date(record.actual_out_time);
+            // 가장 최근 퇴실 기록 하나만 사용
+            let totalAttendedMinutes = 0;
+            if (completedSessions.length > 0) {
+              // 가장 최근 레코드 (attendance_num이 가장 큰 것)
+              const latestSession = completedSessions.reduce((latest: any, current: any) => {
+                return current.attendance_num > latest.attendance_num ? current : latest;
+              });
+              
+              console.log(`📌 가장 최근 퇴실 기록만 사용: attendance_num=${latestSession.attendance_num}`);
+              
+              if (latestSession.in_time && latestSession.actual_out_time) {
+                const inTime = new Date(latestSession.in_time);
+                const outTime = new Date(latestSession.actual_out_time);
                 
                 console.log(`📊 시간 계산 상세:`);
-                console.log(`   - in_time (원본): ${record.in_time}`);
+                console.log(`   - in_time (원본): ${latestSession.in_time}`);
                 console.log(`   - in_time (파싱): ${inTime.toISOString()}`);
-                console.log(`   - actual_out_time (원본): ${record.actual_out_time}`);
+                console.log(`   - actual_out_time (원본): ${latestSession.actual_out_time}`);
                 console.log(`   - actual_out_time (파싱): ${outTime.toISOString()}`);
                 
                 const durationMinutes = Math.floor((outTime.getTime() - inTime.getTime()) / (1000 * 60));
@@ -181,15 +188,13 @@ export async function processEntrance(studentId: string): Promise<string> {
                 
                 if (durationMinutes < 0) {
                   console.error(`❌ 음수 시간 발견! in_time이 out_time보다 늦습니다.`);
-                  console.error(`   건너뛰고 다음 레코드로 이동...`);
-                  return; // 음수 시간은 건너뛰기
+                  console.error(`   이 세션은 무시하고 진행합니다.`);
+                } else {
+                  totalAttendedMinutes = durationMinutes;
+                  console.log(`✅ 완료된 세션: ${inTime.toISOString()} ~ ${outTime.toISOString()} = ${durationMinutes}분`);
                 }
-                
-                totalAttendedMinutes += durationMinutes;
-                
-                console.log(`✅ 완료된 세션: ${inTime.toISOString()} ~ ${outTime.toISOString()} = ${durationMinutes}분`);
               }
-            });
+            }
             
             // 남은 수강 시간 = 총 수업 시간 - 이미 진행된 시간
             if (totalAttendedMinutes > 0) {
@@ -453,31 +458,33 @@ export async function processEntrance(studentId: string): Promise<string> {
     if (completedSessions.length > 0) {
       // 중도입실 - 이전에 퇴실한 기록이 있음
       
-      // 총 진행된 시간 계산 (실제 퇴실 시간 우선 사용)
+      // 가장 최근 퇴실 기록 하나만 사용
+      const latestSession = completedSessions.reduce((latest: any, current: any) => {
+        return current.attendance_num > latest.attendance_num ? current : latest;
+      });
+      
+      console.log(`📌 메시지용 가장 최근 퇴실 기록: attendance_num=${latestSession.attendance_num}`);
+      
       let totalAttendedMinutes = 0;
-      completedSessions.forEach((record: any) => {
-        // completedSessions는 actual_out_time이 있는 것만 필터링됨
-        if (record.in_time && record.actual_out_time) {
-          const inTime = new Date(record.in_time);
-          const outTime = new Date(record.actual_out_time);
-          
-          console.log(`📊 메시지 시간 계산:`);
-          console.log(`   - in_time: ${record.in_time} → ${inTime.toISOString()}`);
-          console.log(`   - actual_out_time: ${record.actual_out_time} → ${outTime.toISOString()}`);
-          
-          const durationMinutes = Math.floor((outTime.getTime() - inTime.getTime()) / (1000 * 60));
-          console.log(`   - 계산: ${durationMinutes}분`);
-          
-          if (durationMinutes < 0) {
-            console.error(`❌ 음수 시간! 건너뛰기...`);
-            return;
-          }
-          
-          totalAttendedMinutes += durationMinutes;
-          
+      if (latestSession.in_time && latestSession.actual_out_time) {
+        const inTime = new Date(latestSession.in_time);
+        const outTime = new Date(latestSession.actual_out_time);
+        
+        console.log(`📊 메시지 시간 계산:`);
+        console.log(`   - in_time: ${latestSession.in_time} → ${inTime.toISOString()}`);
+        console.log(`   - actual_out_time: ${latestSession.actual_out_time} → ${outTime.toISOString()}`);
+        
+        const durationMinutes = Math.floor((outTime.getTime() - inTime.getTime()) / (1000 * 60));
+        console.log(`   - 계산: ${durationMinutes}분`);
+        
+        if (durationMinutes < 0) {
+          console.error(`❌ 음수 시간! 0분으로 처리...`);
+          totalAttendedMinutes = 0;
+        } else {
+          totalAttendedMinutes = durationMinutes;
           console.log(`✅ 완료된 세션: ${inTime.toISOString()} ~ ${outTime.toISOString()} = ${durationMinutes}분`);
         }
-      });
+      }
       
       // 중도입실 메시지
       const roomTypeKorean = isDrum ? '드럼실' : (isKindergarten ? '유치부실' : '연습실');
@@ -529,5 +536,6 @@ export async function removeFromWaitingQueueAction(queueId: string, studentId: s
     return { success: false, message: '삭제 중 오류가 발생했습니다.' };
   }
 }
+
 
 

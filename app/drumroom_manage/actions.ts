@@ -33,10 +33,13 @@ export async function deleteStatus(roomNo: number) {
       
       // 2. student_attendance 테이블에 actual_out_time 업데이트
       const now = new Date();
-      const today = now.toISOString().slice(0, 10);
+      // KST 시간으로 변환 (UTC+9)
+      const kstOffset = 9 * 60 * 60 * 1000;
+      const kstTime = new Date(now.getTime() + kstOffset);
+      const today = kstTime.toISOString().slice(0, 10);
       
-      console.log(`📝 출석 기록 업데이트: actual_out_time=${now.toISOString()}`);
-      await updateActualOutTime(sql, now.toISOString(), roomData.student_id, today);
+      console.log(`📝 출석 기록 업데이트: actual_out_time=${kstTime.toISOString()}`);
+      await updateActualOutTime(sql, kstTime.toISOString(), roomData.student_id, today);
       console.log('✅ 출석 기록 actual_out_time 업데이트 완료');
     } else {
       console.log('ℹ️ 빈 방이므로 출석 기록 업데이트 불필요');
