@@ -2,7 +2,6 @@ import styles from './page.module.css';
 import { neon } from '@neondatabase/serverless';
 import Link from 'next/link';
 import DeleteButton from './DeleteButton';
-import AllEmptyButton from './AllEmptyButton';
 import { selectTheoryStatus, TheoryRow } from '@/app/lib/sql/maps/theoryRoomQueries';
 
 export default async function TheoryRoomManagePage() {
@@ -41,9 +40,6 @@ export default async function TheoryRoomManagePage() {
         <header className={styles.header}>
           <h1 className={styles.title}>이론실관리</h1>
         </header>
-        <div className={styles.actionBar}>
-          <AllEmptyButton />
-        </div>
         <div className={styles.tableWrap}>
           <table className={styles.table}>
             <thead className={styles.thead}>
