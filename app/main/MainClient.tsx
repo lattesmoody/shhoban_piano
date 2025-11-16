@@ -383,7 +383,8 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
                 practiceRows={rows}
                 classTimeSettings={classTimeSettings}
                 studentCourseInfos={studentCourseInfos}
-                onRemoveFromQueue={(queueId, studentId) => handleRemoveFromQueue(queueId, studentId, 'piano')}
+                showDeleteButton={false}
+                showExpectedTime={false}
               />
               <WaitingList 
                 title="유치부 연습 대기" 
@@ -392,7 +393,8 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
                 practiceRows={kinderRows}
                 classTimeSettings={classTimeSettings}
                 studentCourseInfos={studentCourseInfos}
-                onRemoveFromQueue={(queueId, studentId) => handleRemoveFromQueue(queueId, studentId, 'kinder')}
+                showDeleteButton={false}
+                showExpectedTime={false}
               />
               <button className="px-4 py-6 text-2xl font-bold text-white bg-orange-500 rounded-lg hover:bg-orange-600" onClick={onEntrance}>입실</button>
               
@@ -579,7 +581,9 @@ function WaitingList({
   practiceRows = [],
   classTimeSettings = [],
   studentCourseInfos = [],
-  onRemoveFromQueue
+  onRemoveFromQueue,
+  showDeleteButton = true,
+  showExpectedTime = true
 }: { 
   title: string; 
   waitingQueue: WaitingQueueRow[]; 
@@ -588,6 +592,8 @@ function WaitingList({
   classTimeSettings?: ClassTimeSetting[];
   studentCourseInfos?: StudentCourseInfo[];
   onRemoveFromQueue?: (queueId: string, studentId: string) => void;
+  showDeleteButton?: boolean;
+  showExpectedTime?: boolean;
 }) {
   // 대기 시간 계산 (분 단위)
   const calculateWaitTime = (startTime: string): string => {
@@ -696,7 +702,7 @@ function WaitingList({
           <span className="flex-1">수강생이름</span>
           <span className="mr-1">도착시간</span>
           <span className="text-center">방배정<br/>입실예정</span>
-          <span className="w-8 text-center">삭제</span>
+          {showDeleteButton && <span className="w-8 text-center">삭제</span>}
         </div>
       </div>
       
@@ -737,29 +743,33 @@ function WaitingList({
                       {assignment ? (
                         <div className="text-center">
                           <div>{assignment.roomNo}번방</div>
-                          <div className="text-xs text-gray-500">
-                            {assignment.expectedExitTime.toLocaleTimeString('ko-KR', { 
-                              hour: 'numeric', 
-                              minute: '2-digit',
-                              hour12: false 
-                            })}
-                          </div>
+                          {showExpectedTime && (
+                            <div className="text-xs text-gray-500">
+                              {assignment.expectedExitTime.toLocaleTimeString('ko-KR', { 
+                                hour: 'numeric', 
+                                minute: '2-digit',
+                                hour12: false 
+                              })}
+                            </div>
+                          )}
                         </div>
                       ) : '-'}
                     </span>
                     
                     {/* 삭제 버튼 */}
-                    <button
-                      onClick={() => {
-                        if (onRemoveFromQueue && confirm(`${item.student_name}님을 대기열에서 삭제하시겠습니까?`)) {
-                          onRemoveFromQueue(String(item.queue_id), item.student_id);
-                        }
-                      }}
-                      className="w-6 h-6 ml-1 text-xs bg-red-500 hover:bg-red-600 text-white rounded flex items-center justify-center"
-                      title="대기열에서 삭제"
-                    >
-                      ×
-                    </button>
+                    {showDeleteButton && (
+                      <button
+                        onClick={() => {
+                          if (onRemoveFromQueue && confirm(`${item.student_name}님을 대기열에서 삭제하시겠습니까?`)) {
+                            onRemoveFromQueue(String(item.queue_id), item.student_id);
+                          }
+                        }}
+                        className="w-6 h-6 ml-1 text-xs bg-red-500 hover:bg-red-600 text-white rounded flex items-center justify-center"
+                        title="대기열에서 삭제"
+                      >
+                        ×
+                      </button>
+                    )}
                   </div>
                 </li>
               );
@@ -781,7 +791,7 @@ function WaitingList({
                     <span className="text-xs text-gray-400">-</span>
                     
                     {/* 빈 삭제 버튼 공간 */}
-                    <div className="w-6 h-6 ml-1"></div>
+                    {showDeleteButton && <div className="w-6 h-6 ml-1"></div>}
                   </div>
                 </li>
               );
