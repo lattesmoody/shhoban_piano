@@ -10,6 +10,7 @@ const mainMenuItems = [
   '연습실 관리',
   '드럼실 관리',
   '유치부실 관리',
+  '이론실 관리',
   '수강생 출석 확인',
   '과정별 수업 시간 설정',
   '일일 수강 현황 초기화',
@@ -73,18 +74,24 @@ export default function MainDashboard() {
                 </button>
               </Link>
             ) : index === 5 ? (
-              <Link key={index} href="/student_attendance">
+              <Link key={index} href="/theoryroom_manage">
                 <button className={styles.menuButton}>
                   {item}
                 </button>
               </Link>
             ) : index === 6 ? (
-              <Link key={index} href="/class_time_setup_form">
+              <Link key={index} href="/student_attendance">
                 <button className={styles.menuButton}>
                   {item}
                 </button>
               </Link>
             ) : index === 7 ? (
+              <Link key={index} href="/class_time_setup_form">
+                <button className={styles.menuButton}>
+                  {item}
+                </button>
+              </Link>
+            ) : index === 8 ? (
               // 일일 수강 현황 초기화 버튼 (이중 확인)
               <ResetDailyButton key={index} className={styles.menuButton} />
             ) : (
