@@ -3,6 +3,7 @@ import { neon } from '@neondatabase/serverless';
 import { selectPracticeStatusToday, PracticeRow } from '@/app/lib/sql/maps/practiceRoomQueries';
 import { selectKinderStatus, KinderRow } from '@/app/lib/sql/maps/kinderRoomQueries';
 import { selectDrumStatus, DrumRow } from '@/app/lib/sql/maps/drumRoomQueries';
+import { selectTheoryStatus, TheoryRow } from '@/app/lib/sql/maps/theoryRoomQueries';
 import { selectClassTimeSettings, ClassTimeSetting } from '@/app/lib/sql/maps/classTimeQueries';
 import { selectWaitingQueue, WaitingQueueRow } from '@/app/lib/sql/maps/waitingQueueQueries';
 import { normalizePlaceholderForEnv } from '@/app/lib/sql/utils';
@@ -22,13 +23,15 @@ export default async function AdminPage() {
   const rows: PracticeRow[] = await selectPracticeStatusToday(sql);
   const kinderRows: KinderRow[] = await selectKinderStatus(sql);
   const drumRows: DrumRow[] = await selectDrumStatus(sql);
+  const theoryRows: TheoryRow[] = await selectTheoryStatus(sql);
   const classTimeSettings: ClassTimeSetting[] = await selectClassTimeSettings(sql);
 
   // 현재 입실한 학생들의 과정 정보 조회
   const allStudentIds = [
     ...rows.filter(r => r.student_id).map(r => r.student_id!),
     ...kinderRows.filter(r => r.student_id).map(r => r.student_id!),
-    ...drumRows.filter(r => r.student_id).map(r => r.student_id!)
+    ...drumRows.filter(r => r.student_id).map(r => r.student_id!),
+    ...theoryRows.filter(r => r.student_id).map(r => r.student_id!)
   ];
 
   const studentCourseInfos: StudentCourseInfo[] = [];
@@ -131,6 +134,47 @@ export default async function AdminPage() {
   } catch (error) {
     console.warn('Kinder waiting queue data not available:', error);
   }
+
+  // 이론실에 있는 학생들을 대기열에 추가
+  // (유치부실/연습실이 비면 자동 입실 대상)
+  for (const theoryRoom of theoryRows) {
+    if (theoryRoom.student_id && theoryRoom.student_name) {
+      try {
+        const studentSql = normalizePlaceholderForEnv(process.env.SELECT_STUDENT_BY_ID_SQL);
+        if (studentSql) {
+          const studentRes: any = await (sql as any).query(studentSql, [theoryRoom.student_id]);
+          const student = Array.isArray(studentRes) ? studentRes[0] : (studentRes?.rows?.[0] ?? null);
+          
+          if (student) {
+            const isKindergarten = student.student_grade === 1 || student.student_grade === '1';
+            
+            // 이론실 학생을 대기열 형식으로 변환
+            const theoryQueueItem: WaitingQueueRow = {
+              queue_id: `theory_${theoryRoom.room_no}`, // 고유 ID
+              student_id: theoryRoom.student_id,
+              student_name: theoryRoom.student_name,
+              wait_start_time: theoryRoom.in_time || new Date().toISOString(),
+              queue_number: 999, // 이론실 학생은 맨 뒤에 표시
+              queue_type: isKindergarten ? 'kinder' : 'piano',
+              member_id: student.member_id || null
+            };
+            
+            if (isKindergarten) {
+              kinderWaitingQueue.push(theoryQueueItem);
+            } else {
+              pianoWaitingQueue.push(theoryQueueItem);
+            }
+          }
+        }
+      } catch (error) {
+        console.error(`Error fetching student info for theory room ${theoryRoom.room_no}:`, error);
+      }
+    }
+  }
+
+  // 대기열 정렬 (queue_number 기준)
+  pianoWaitingQueue.sort((a, b) => a.queue_number - b.queue_number);
+  kinderWaitingQueue.sort((a, b) => a.queue_number - b.queue_number);
 
   return <MainClient 
     rows={rows} 

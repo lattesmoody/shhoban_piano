@@ -390,7 +390,8 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
                 title="유치부 연습 대기" 
                 waitingQueue={kinderWaitingQueue} 
                 color="bg-pink-500"
-                practiceRows={kinderRows}
+                practiceRows={[]}
+                kinderRows={kinderRows}
                 classTimeSettings={classTimeSettings}
                 studentCourseInfos={studentCourseInfos}
                 showDeleteButton={false}
@@ -579,6 +580,7 @@ function WaitingList({
   waitingQueue, 
   color = 'bg-purple-600',
   practiceRows = [],
+  kinderRows = [],
   classTimeSettings = [],
   studentCourseInfos = [],
   onRemoveFromQueue,
@@ -589,6 +591,7 @@ function WaitingList({
   waitingQueue: WaitingQueueRow[]; 
   color?: string;
   practiceRows?: PracticeRow[];
+  kinderRows?: KinderRow[];
   classTimeSettings?: ClassTimeSetting[];
   studentCourseInfos?: StudentCourseInfo[];
   onRemoveFromQueue?: (queueId: string, studentId: string) => void;
@@ -617,12 +620,18 @@ function WaitingList({
 
   // 방 배정 예상 계산
   const calculateRoomAssignments = (): RoomAssignment[] => {
-    if (!practiceRows || practiceRows.length === 0) return [];
-
     const assignments: RoomAssignment[] = [];
     
+    // 연습실과 유치부실을 합쳐서 처리
+    const allRooms = [
+      ...(practiceRows || []),
+      ...(kinderRows || [])
+    ];
+    
+    if (allRooms.length === 0) return [];
+    
     // 현재 사용 중인 방들의 예상 퇴실 시간 계산
-    practiceRows.forEach(room => {
+    allRooms.forEach(room => {
       if (room.student_id && room.in_time) {
         try {
           // 퇴실 시간 우선순위: actual_out_time > out_time > 계산
@@ -701,7 +710,7 @@ function WaitingList({
           <div className="w-3 mr-2"></div> {/* 강사 표시 공간 */}
           <span className="flex-1">수강생이름</span>
           <span className="mr-1">도착시간</span>
-          <span className="text-center">방배정<br/>입실예정</span>
+          <span className="text-center">입실예정방</span>
           {showDeleteButton && <span className="w-8 text-center">삭제</span>}
         </div>
       </div>
@@ -717,7 +726,9 @@ function WaitingList({
             
             if (item) {
               // 방 배정 예상 정보 가져오기
-              const assignmentIndex = item.queue_number - 1;
+              // 이론실 학생(queue_id가 theory_로 시작)은 항상 첫 번째 빈 방을 배정받음
+              const isTheoryStudent = String(item.queue_id).startsWith('theory_');
+              const assignmentIndex = isTheoryStudent ? 0 : (item.queue_number - 1);
               const assignment = roomAssignments[assignmentIndex];
               
               return (
@@ -740,20 +751,49 @@ function WaitingList({
                     
                     {/* 방 배정 및 예상 입실 시간 */}
                     <span className="text-xs font-bold text-blue-600">
-                      {assignment ? (
-                        <div className="text-center">
-                          <div>{assignment.roomNo}번방</div>
-                          {showExpectedTime && (
-                            <div className="text-xs text-gray-500">
-                              {assignment.expectedExitTime.toLocaleTimeString('ko-KR', { 
-                                hour: 'numeric', 
-                                minute: '2-digit',
-                                hour12: false 
-                              })}
+                      {(() => {
+                        // 이론실에 있는 학생인지 확인 (queue_id가 theory_로 시작)
+                        if (String(item.queue_id).startsWith('theory_')) {
+                          // 이론실에 있는 학생도 다음 입실 예정 방을 표시
+                          if (assignment) {
+                            return (
+                              <div className="text-center">
+                                <div>{assignment.roomNo}번방</div>
+                                {showExpectedTime && (
+                                  <div className="text-xs text-gray-500">
+                                    {assignment.expectedExitTime.toLocaleTimeString('ko-KR', { 
+                                      hour: 'numeric', 
+                                      minute: '2-digit',
+                                      hour12: false 
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          }
+                          return '-';
+                        }
+                        
+                        // 일반 대기열 학생
+                        if (assignment) {
+                          return (
+                            <div className="text-center">
+                              <div>{assignment.roomNo}번방</div>
+                              {showExpectedTime && (
+                                <div className="text-xs text-gray-500">
+                                  {assignment.expectedExitTime.toLocaleTimeString('ko-KR', { 
+                                    hour: 'numeric', 
+                                    minute: '2-digit',
+                                    hour12: false 
+                                  })}
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      ) : '-'}
+                          );
+                        }
+                        
+                        return '-';
+                      })()}
                     </span>
                     
                     {/* 삭제 버튼 */}

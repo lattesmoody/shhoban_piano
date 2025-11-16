@@ -31,6 +31,16 @@ function getGradeText(gradeCode: number | null): string {
   return gradeMap[gradeCode] || '';
 }
 
+// 비고(방 번호)를 텍스트로 변환 - 이론실은 "이론실"로 표시
+function formatRemark(remark: string | null): string {
+  if (!remark) return '';
+  // "61500번 방" 또는 이론실 방 번호가 포함된 경우 "이론실"로 표시
+  if (remark.includes('61500')) {
+    return '이론실';
+  }
+  return remark;
+}
+
 export default async function StudentAttendancePage({ searchParams }: { searchParams?: { y?: string; m?: string; d?: string } }) {
   const today = new Date();
   const resolvedSearchParams = await searchParams;
@@ -105,7 +115,7 @@ export default async function StudentAttendancePage({ searchParams }: { searchPa
                   <td>{r.course_name || ''}</td>
                   <td>{formatTimeCell(r.in_time)}</td>
                   <td>{formatTimeCell(r.actual_out_time)}</td>
-                  <td>{r.remark || ''}</td>
+                  <td>{formatRemark(r.remark)}</td>
                 </tr>
               ))
             ) : (
