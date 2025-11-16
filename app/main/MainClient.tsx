@@ -212,7 +212,7 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
     return () => clearInterval(timer);
   }, []);
 
-  // 30초마다 자동 새로고침
+  // 30초마다 자동 새로고침 (Vercel Cron이 자동 퇴실 처리)
   useEffect(() => {
     const refreshInterval = setInterval(() => {
       //console.log('🔄 자동 새로고침 (30초)');
