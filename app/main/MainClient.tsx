@@ -227,11 +227,11 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
   const byRoom = new Map<number, PracticeRow>();
   rows.forEach(r => byRoom.set(r.room_no, r));
 
-  // - 1~20호실 데이터를 UI 카드 모델로 변환
+  // - 1~24호실 데이터를 UI 카드 모델로 변환
   //   · name 존재 시 초록 배경
   //   · time: 입/퇴실 합성 (학생별 수업 시간 적용)
   //   · number: 분침(5분 단위) 계산 결과 또는 '-'
-  const roomData = Array.from({ length: 20 }, (_, idx) => {
+  const roomData = Array.from({ length: 24 }, (_, idx) => {
     const roomNo = idx + 1;
     const r = byRoom.get(roomNo);
     const name = r?.student_name ?? null;
@@ -347,7 +347,7 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
           <div className="flex justify-end mb-2 text-sm font-semibold text-gray-700">{currentTime}</div>
           <div className="grid grid-cols-1 gap-0 xl:grid-cols-12">
             <div className="xl:col-span-10">
-              <div className="grid grid-cols-2 gap-0 mb-0 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-10">
+              <div className="grid grid-cols-2 gap-0 mb-0 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-12">
                 {roomData.map(room => (<RoomCard key={room.id} {...room} />))}
               </div>
               <div className="grid grid-cols-10 gap-0">
