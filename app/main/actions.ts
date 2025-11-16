@@ -469,10 +469,12 @@ export async function processEntrance(studentId: string): Promise<string> {
     }
 
     // 대기열에서 제거 (입실 완료)
-    const queueType = isDrum ? 'drum' : (lessonCode === 1 || lessonCode === 4 ? 'piano' : 'piano');
+    const queueType = isDrum ? 'drum' : (isKindergarten ? 'kinder' : 'piano');
+    console.log(`대기열 제거: studentId=${studentId}, queueType=${queueType}`);
     try {
       await removeFromWaitingQueue(sql, studentId, queueType);
       await reorderWaitingQueue(sql, queueType);
+      console.log(`✅ 대기열 제거 완료: ${queueType}`);
     } catch (error) {
       console.error('Failed to remove from waiting queue:', error);
     }
