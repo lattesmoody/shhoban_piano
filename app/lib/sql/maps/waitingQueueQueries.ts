@@ -22,6 +22,7 @@ export type WaitingQueueRow = {
   status: string;
   created_at: string;
   updated_at: string;
+  member_id: string | null; // 담당 강사 ID (이론실 학생용)
 };
 
 // 대기열 조회 (타입별)

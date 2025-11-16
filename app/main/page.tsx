@@ -153,9 +153,15 @@ export default async function AdminPage() {
               queue_id: `theory_${theoryRoom.room_no}`, // 고유 ID
               student_id: theoryRoom.student_id,
               student_name: theoryRoom.student_name,
+              student_grade: student.student_grade || null,
+              lesson_type: student.lesson_code || 0,
               wait_start_time: theoryRoom.in_time || new Date().toISOString(),
               queue_number: 999, // 이론실 학생은 맨 뒤에 표시
               queue_type: isKindergarten ? 'kinder' : 'piano',
+              estimated_wait_time: null,
+              status: 'waiting',
+              created_at: theoryRoom.in_time || new Date().toISOString(),
+              updated_at: theoryRoom.in_time || new Date().toISOString(),
               member_id: student.member_id || null
             };
             
