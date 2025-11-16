@@ -90,8 +90,11 @@ async function getMyPageData() {
       
       if (!aLatestIn) return 1;
       if (!bLatestIn) return -1;
-      // 타입 체크 후 문자열로 확정
-      return (aLatestIn as string).localeCompare(bLatestIn as string);
+      
+      // Date 객체나 문자열을 모두 처리
+      const aTime = new Date(aLatestIn).getTime();
+      const bTime = new Date(bLatestIn).getTime();
+      return aTime - bTime;
     });
     
     return studentsData;
