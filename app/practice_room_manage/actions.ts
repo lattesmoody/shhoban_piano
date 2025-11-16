@@ -36,14 +36,14 @@ export async function deleteStatus(roomNo: number) {
   if (!parsed.success) throw new Error('잘못된 연습실 번호입니다.');
   const sql = getSql();
   
-  console.log(`\n🔄 연습실 ${parsed.data}번 퇴실 처리 시작...`);
+  //console.log(`\n🔄 연습실 ${parsed.data}번 퇴실 처리 시작...`);
   
   try {
     // 1. 현재 방 상태 조회
     const roomData = await selectPracticeRoomForExit(sql, parsed.data);
     
     if (roomData && roomData.student_id) {
-      console.log(`📊 방 정보: 학생ID=${roomData.student_id}, 이름=${roomData.student_name}`);
+      //console.log(`📊 방 정보: 학생ID=${roomData.student_id}, 이름=${roomData.student_name}`);
       
       // 2. student_attendance 테이블에 actual_out_time 업데이트
       const now = new Date();
@@ -52,19 +52,19 @@ export async function deleteStatus(roomNo: number) {
       const kstTime = new Date(now.getTime() + kstOffset);
       const today = kstTime.toISOString().slice(0, 10);
       
-      console.log(`📝 출석 기록 업데이트: actual_out_time=${kstTime.toISOString()}`);
+      //console.log(`📝 출석 기록 업데이트: actual_out_time=${kstTime.toISOString()}`);
       await updateActualOutTime(sql, kstTime.toISOString(), roomData.student_id, today);
-      console.log('✅ 출석 기록 actual_out_time 업데이트 완료');
+      //console.log('✅ 출석 기록 actual_out_time 업데이트 완료');
     } else {
-      console.log('ℹ️ 빈 방이므로 출석 기록 업데이트 불필요');
+      //console.log('ℹ️ 빈 방이므로 출석 기록 업데이트 불필요');
     }
     
     // 3. 방 초기화
     await deletePracticeStatus(sql, parsed.data);
-    console.log('✅ 연습실 초기화 완료');
+    //console.log('✅ 연습실 초기화 완료');
     
     // 4. 대기열 및 이론실 확인하여 자동 입실 처리
-    console.log('\n🔍 자동 입실 대상 확인 중...');
+    //console.log('\n🔍 자동 입실 대상 확인 중...');
     try {
       // 4-1. 이론실에 있는 일반 학생 확인 (유치부 제외)
       const theoryRooms = await selectTheoryStatus(sql);
@@ -93,10 +93,10 @@ export async function deleteStatus(roomNo: number) {
       
       // 4-2. 이론실 학생이 있으면 우선 입실
       if (theoryStudent) {
-        console.log(`👤 이론실 대기 학생: ${theoryStudent.student_name} (이론실 ${theoryStudent.room_no}번)`);
+        //console.log(`👤 이론실 대기 학생: ${theoryStudent.student_name} (이론실 ${theoryStudent.room_no}번)`);
         
         // 이론실 먼저 비우기
-        console.log('🔄 이론실 퇴실 처리 중...');
+        //console.log('🔄 이론실 퇴실 처리 중...');
         await (sql as any)`
           UPDATE theory_room_status 
           SET student_id = NULL, 
@@ -106,24 +106,24 @@ export async function deleteStatus(roomNo: number) {
               actual_out_time = NULL
           WHERE room_no = ${theoryStudent.room_no}
         `;
-        console.log('✅ 이론실 퇴실 완료');
+        //console.log('✅ 이론실 퇴실 완료');
         
         // 연습실로 입실
-        console.log('🚪 이론실 → 연습실 자동 입실 처리 중...');
+        //console.log('🚪 이론실 → 연습실 자동 입실 처리 중...');
         const entranceResult = await processEntrance(theoryStudent.student_id);
-        console.log(`✅ 자동 입실 완료: ${entranceResult}`);
+        //console.log(`✅ 자동 입실 완료: ${entranceResult}`);
       } else {
         // 4-3. 이론실 학생이 없으면 대기열 확인
         const pianoQueue = await selectWaitingQueue(sql, 'piano');
         
         if (pianoQueue && pianoQueue.length > 0) {
           const firstInQueue = pianoQueue[0];
-          console.log(`👤 대기열 첫 번째 학생: ${firstInQueue.student_name} (ID: ${firstInQueue.student_id})`);
-          console.log('🚪 자동 입실 처리 중...');
+          //console.log(`👤 대기열 첫 번째 학생: ${firstInQueue.student_name} (ID: ${firstInQueue.student_id})`);
+          //console.log('🚪 자동 입실 처리 중...');
           const entranceResult = await processEntrance(firstInQueue.student_id);
-          console.log(`✅ 자동 입실 완료: ${entranceResult}`);
+          //console.log(`✅ 자동 입실 완료: ${entranceResult}`);
         } else {
-          console.log('ℹ️ 대기열이 비어있습니다.');
+          //console.log('ℹ️ 대기열이 비어있습니다.');
         }
       }
     } catch (queueError) {
@@ -145,14 +145,14 @@ export async function activateStatus(roomNo: number) {
   if (!parsed.success) throw new Error('잘못된 연습실 번호입니다.');
   const sql = getSql();
   
-  console.log(`\n🔄 연습실 ${parsed.data}번 활성화 처리 시작...`);
+  //console.log(`\n🔄 연습실 ${parsed.data}번 활성화 처리 시작...`);
   
   try {
     await activatePracticeStatus(sql, parsed.data);
-    console.log('✅ 연습실 활성화 완료');
+    //console.log('✅ 연습실 활성화 완료');
     
     // 이론실 및 대기열 확인하여 자동 입실 처리
-    console.log('\n🔍 자동 입실 대상 확인 중...');
+    //console.log('\n🔍 자동 입실 대상 확인 중...');
     try {
       // 1. 이론실에 있는 일반 학생 확인
       const theoryRooms = await selectTheoryStatus(sql);
@@ -179,7 +179,7 @@ export async function activateStatus(roomNo: number) {
       
       // 2. 이론실 학생이 있으면 우선 입실
       if (theoryStudent) {
-        console.log(`👤 이론실 대기 학생: ${theoryStudent.student_name} (이론실 ${theoryStudent.room_no}번)`);
+        //console.log(`👤 이론실 대기 학생: ${theoryStudent.student_name} (이론실 ${theoryStudent.room_no}번)`);
         await (sql as any)`
           UPDATE theory_room_status 
           SET student_id = NULL, 
@@ -190,17 +190,17 @@ export async function activateStatus(roomNo: number) {
           WHERE room_no = ${theoryStudent.room_no}
         `;
         const entranceResult = await processEntrance(theoryStudent.student_id);
-        console.log(`✅ 자동 입실 완료: ${entranceResult}`);
+        //console.log(`✅ 자동 입실 완료: ${entranceResult}`);
       } else {
         // 3. 대기열 확인
         const pianoQueue = await selectWaitingQueue(sql, 'piano');
         if (pianoQueue && pianoQueue.length > 0) {
           const firstInQueue = pianoQueue[0];
-          console.log(`👤 대기열 첫 번째 학생: ${firstInQueue.student_name}`);
+          //console.log(`👤 대기열 첫 번째 학생: ${firstInQueue.student_name}`);
           const entranceResult = await processEntrance(firstInQueue.student_id);
-          console.log(`✅ 자동 입실 완료: ${entranceResult}`);
+          //console.log(`✅ 자동 입실 완료: ${entranceResult}`);
         } else {
-          console.log('ℹ️ 대기열이 비어있습니다.');
+          //console.log('ℹ️ 대기열이 비어있습니다.');
         }
       }
     } catch (queueError) {
@@ -221,15 +221,15 @@ export async function deactivateStatus(roomNo: number) {
   if (!parsed.success) throw new Error('잘못된 연습실 번호입니다.');
   const sql = getSql();
   
-  console.log(`\n🔄 연습실 ${parsed.data}번 비활성화 처리 시작...`);
+  //console.log(`\n🔄 연습실 ${parsed.data}번 비활성화 처리 시작...`);
   
   try {
     // 1. 현재 방에 학생이 있는지 확인
     const roomData = await selectPracticeRoomForExit(sql, parsed.data);
     
     if (roomData && roomData.student_id) {
-      console.log(`📊 방에 학생 있음: ${roomData.student_name} (ID: ${roomData.student_id})`);
-      console.log('🚪 퇴실 처리 중...');
+      //console.log(`📊 방에 학생 있음: ${roomData.student_name} (ID: ${roomData.student_id})`);
+      //console.log('🚪 퇴실 처리 중...');
       
       // 2. actual_out_time 업데이트
       const now = new Date();
@@ -238,18 +238,18 @@ export async function deactivateStatus(roomNo: number) {
       const today = kstTime.toISOString().slice(0, 10);
       
       await updateActualOutTime(sql, kstTime.toISOString(), roomData.student_id, today);
-      console.log('✅ 출석 기록 업데이트 완료');
+      //console.log('✅ 출석 기록 업데이트 완료');
       
       // 3. 방 비우기
       await deletePracticeStatus(sql, parsed.data);
-      console.log('✅ 방 비우기 완료');
+      //console.log('✅ 방 비우기 완료');
     } else {
-      console.log('ℹ️ 빈 방입니다.');
+      //console.log('ℹ️ 빈 방입니다.');
     }
     
     // 4. 방 비활성화
     await deactivatePracticeStatus(sql, parsed.data);
-    console.log('✅ 연습실 비활성화 완료');
+    //console.log('✅ 연습실 비활성화 완료');
     
   } catch (error) {
     console.error('❌ 비활성화 처리 오류:', error);
@@ -264,7 +264,7 @@ export async function deactivateStatus(roomNo: number) {
 export async function makeAllEmpty() {
   const sql = getSql();
   
-  console.log('\n🔄 전체 공실 처리 시작...');
+  //console.log('\n🔄 전체 공실 처리 시작...');
   
   try {
     // 1. 모든 방 비우기 전에 입실 중인 학생들의 actual_out_time 업데이트
@@ -275,7 +275,7 @@ export async function makeAllEmpty() {
       WHERE student_id IS NOT NULL
     `;
     
-    console.log(`📊 현재 입실 중인 방: ${allRooms.length}개`);
+    //console.log(`📊 현재 입실 중인 방: ${allRooms.length}개`);
     
     const now = new Date();
     const kstOffset = 9 * 60 * 60 * 1000;
@@ -284,17 +284,17 @@ export async function makeAllEmpty() {
     
     for (const room of allRooms) {
       if (room.student_id) {
-        console.log(`  방 ${room.room_no}: ${room.student_name} - actual_out_time 업데이트`);
+        //console.log(`  방 ${room.room_no}: ${room.student_name} - actual_out_time 업데이트`);
         await updateActualOutTime(sql, kstTime.toISOString(), room.student_id, today);
       }
     }
     
     // 2. 모든 방 비우기
     await setAllEmpty(sql);
-    console.log('✅ 전체 공실 처리 완료');
+    //console.log('✅ 전체 공실 처리 완료');
     
     // 3. 이론실 및 대기열 확인하여 자동 입실 처리
-    console.log('\n🔍 자동 입실 대상 확인 중...');
+    //console.log('\n🔍 자동 입실 대상 확인 중...');
     try {
       // 3-1. 이론실에 있는 일반 학생들 먼저 입실
       const theoryRooms = await selectTheoryStatus(sql);
@@ -319,10 +319,10 @@ export async function makeAllEmpty() {
       }
       
       if (theoryStudents.length > 0) {
-        console.log(`👥 이론실 일반 학생: ${theoryStudents.length}명`);
+        //console.log(`👥 이론실 일반 학생: ${theoryStudents.length}명`);
         
         for (const student of theoryStudents) {
-          console.log(`\n🚪 ${student.student_name} (이론실 ${student.room_no}번) → 연습실 이동 시도...`);
+          //console.log(`\n🚪 ${student.student_name} (이론실 ${student.room_no}번) → 연습실 이동 시도...`);
           try {
             // 이론실 먼저 비우기
             await (sql as any)`
@@ -336,7 +336,7 @@ export async function makeAllEmpty() {
             `;
             
             const entranceResult = await processEntrance(student.student_id);
-            console.log(`✅ ${student.student_name}: ${entranceResult}`);
+            //console.log(`✅ ${student.student_name}: ${entranceResult}`);
           } catch (error) {
             console.error(`⚠️ ${student.student_name} 입실 실패:`, error);
           }
@@ -347,19 +347,19 @@ export async function makeAllEmpty() {
       const pianoQueue = await selectWaitingQueue(sql, 'piano');
       
       if (pianoQueue && pianoQueue.length > 0) {
-        console.log(`👥 피아노 대기열: ${pianoQueue.length}명`);
+        //console.log(`👥 피아노 대기열: ${pianoQueue.length}명`);
         
         for (const student of pianoQueue) {
-          console.log(`\n🚪 ${student.student_name} 자동 입실 시도...`);
+          //console.log(`\n🚪 ${student.student_name} 자동 입실 시도...`);
           try {
             const entranceResult = await processEntrance(student.student_id);
-            console.log(`✅ ${student.student_name}: ${entranceResult}`);
+            //console.log(`✅ ${student.student_name}: ${entranceResult}`);
           } catch (error) {
             console.error(`⚠️ ${student.student_name} 입실 실패:`, error);
           }
         }
       } else {
-        console.log('ℹ️ 대기열이 비어있습니다.');
+        //console.log('ℹ️ 대기열이 비어있습니다.');
       }
     } catch (queueError) {
       console.error('⚠️ 대기열 처리 중 오류 (계속 진행):', queueError);

@@ -141,7 +141,7 @@ export async function processEntrance(studentId: string): Promise<string> {
         
         // 오늘 출석 기록 확인 (중도입실 판단)
         const today = normalizedInTime.toISOString().slice(0, 10); // YYYY-MM-DD
-        console.log(`📅 중도입실 체크: 날짜=${today}, 학생ID=${studentId}`);
+        //console.log(`📅 중도입실 체크: 날짜=${today}, 학생ID=${studentId}`);
         
         try {
           const attendanceSql = normalizePlaceholderForEnv(process.env.SELECT_ATTENDANCE_BY_DATE_SQL);
@@ -150,9 +150,9 @@ export async function processEntrance(studentId: string): Promise<string> {
             const allAttendance = Array.isArray(attendanceResult) ? attendanceResult : (attendanceResult?.rows || []);
             const todayAttendance = allAttendance.filter((record: any) => record.student_id === studentId);
             
-            console.log(`📊 오늘 출석 기록: 전체=${allAttendance.length}개, 해당학생=${todayAttendance.length}개`);
+            //console.log(`📊 오늘 출석 기록: 전체=${allAttendance.length}개, 해당학생=${todayAttendance.length}개`);
             if (todayAttendance.length > 0) {
-              console.log('📝 해당 학생 출석 기록:', JSON.stringify(todayAttendance, null, 2));
+              //console.log('📝 해당 학생 출석 기록:', JSON.stringify(todayAttendance, null, 2));
             }
             
             // 완료된 세션들의 총 시간 계산 - actual_out_time만 확인
@@ -160,16 +160,16 @@ export async function processEntrance(studentId: string): Promise<string> {
               // 실제 퇴실 시간(actual_out_time)이 있어야만 완료된 세션으로 간주
               // out_time은 입실 시 자동 계산되므로 완료 여부 판단에 사용하면 안됨
               const hasActualOutTime = record.actual_out_time !== null && record.actual_out_time !== undefined;
-              console.log(`  - 레코드 ${record.attendance_num}: actual_out_time=${record.actual_out_time}, 완료=${hasActualOutTime}`);
+              //console.log(`  - 레코드 ${record.attendance_num}: actual_out_time=${record.actual_out_time}, 완료=${hasActualOutTime}`);
               return hasActualOutTime;
             });
             
-            console.log(`✅ 완료된 세션: ${completedSessions.length}개`);
+            //console.log(`✅ 완료된 세션: ${completedSessions.length}개`);
             
             // 모든 완료된 세션의 시간을 합산
             let totalAttendedMinutes = 0;
             if (completedSessions.length > 0) {
-              console.log(`📌 모든 완료된 세션의 시간 합산:`);
+              //console.log(`📌 모든 완료된 세션의 시간 합산:`);
               
               completedSessions.forEach((session: any) => {
                 if (session.in_time && session.actual_out_time) {
@@ -182,18 +182,18 @@ export async function processEntrance(studentId: string): Promise<string> {
                     console.error(`❌ 세션 #${session.attendance_num}: 음수 시간 발견 (무시)`);
                   } else {
                     totalAttendedMinutes += durationMinutes;
-                    console.log(`   - 세션 #${session.attendance_num}: ${durationMinutes}분`);
+                    //console.log(`   - 세션 #${session.attendance_num}: ${durationMinutes}분`);
                   }
                 }
               });
               
-              console.log(`✅ 총 수강 시간: ${totalAttendedMinutes}분`);
+              //console.log(`✅ 총 수강 시간: ${totalAttendedMinutes}분`);
             }
             
             // 남은 수강 시간 = 총 수업 시간 - 이미 진행된 시간
             if (totalAttendedMinutes > 0) {
               remainingClassTime = Math.max(classDuration - totalAttendedMinutes, 0); // 최소 0분 (음수 방지)
-              console.log(`중도입실 감지: 총 수업시간=${classDuration}분, 진행된 시간=${totalAttendedMinutes}분, 남은 시간=${remainingClassTime}분`);
+              //console.log(`중도입실 감지: 총 수업시간=${classDuration}분, 진행된 시간=${totalAttendedMinutes}분, 남은 시간=${remainingClassTime}분`);
             }
           }
         } catch (error) {
@@ -204,8 +204,8 @@ export async function processEntrance(studentId: string): Promise<string> {
         // 퇴실 시간 = 정규화된 입실 시간 + 남은 수업 시간
         const outTime = new Date(normalizedInTime.getTime() + remainingClassTime * 60 * 1000);
         
-        console.log(`수업 시간 계산: 학년=${gradeName}, 레슨=${lessonCode}, 기본시간=${classDuration}분, 실제시간=${remainingClassTime}분`);
-        console.log(`입실: ${normalizedInTime.toISOString()} → 퇴실: ${outTime.toISOString()}`);
+        //console.log(`수업 시간 계산: 학년=${gradeName}, 레슨=${lessonCode}, 기본시간=${classDuration}분, 실제시간=${remainingClassTime}분`);
+        //console.log(`입실: ${normalizedInTime.toISOString()} → 퇴실: ${outTime.toISOString()}`);
         
         return outTime;
       } catch (error) {
@@ -221,8 +221,8 @@ export async function processEntrance(studentId: string): Promise<string> {
     const isDrum = lessonCode === 3;
     const isKindergarten = (student.student_grade === 1 || student.student_grade === '1'); // 유치부 학년 코드 1 (숫자/문자열 모두 처리)
     
-    console.log(`방 배정 로직 확인: 학생=${student.student_name}, 학년=${student.student_grade} (타입: ${typeof student.student_grade}), 레슨코드=${lessonCode}`);
-    console.log(`isDrum=${isDrum}, isKindergarten=${isKindergarten}`);
+    //console.log(`방 배정 로직 확인: 학생=${student.student_name}, 학년=${student.student_grade} (타입: ${typeof student.student_grade}), 레슨코드=${lessonCode}`);
+    //console.log(`isDrum=${isDrum}, isKindergarten=${isKindergarten}`);
     
     // 모든 방 타입에서 중복 입실 체크
     let alreadyEnteredRooms: any[] = [];
@@ -279,7 +279,7 @@ export async function processEntrance(studentId: string): Promise<string> {
     
     if (isPianoTheory) {
       // 피아노+이론 학생: 피아노 시간 완료 여부 확인
-      console.log('🎹📚 피아노+이론 과정 - 피아노 완료 여부 체크');
+      //console.log('🎹📚 피아노+이론 과정 - 피아노 완료 여부 체크');
       
       // 오늘 출석 기록 확인 (피아노 시간을 이미 채웠는지 확인)
       const today = normalizedInTime.toISOString().slice(0, 10);
@@ -297,7 +297,7 @@ export async function processEntrance(studentId: string): Promise<string> {
             record.actual_out_time !== null && record.actual_out_time !== undefined
           );
           
-          console.log(`📊 피아노+이론 학생 출석 기록: 전체=${todayAttendance.length}개, 완료=${completedSessions.length}개`);
+          //console.log(`📊 피아노+이론 학생 출석 기록: 전체=${todayAttendance.length}개, 완료=${completedSessions.length}개`);
           
           // 총 수강 시간 계산
           let totalAttendedMinutes = 0;
@@ -308,7 +308,7 @@ export async function processEntrance(studentId: string): Promise<string> {
               const duration = Math.floor((outTime.getTime() - inTime.getTime()) / (1000 * 60));
               if (duration >= 0) {
                 totalAttendedMinutes += duration;
-                console.log(`  ✓ 세션: ${duration}분 (입실: ${inTime.toLocaleTimeString()}, 퇴실: ${outTime.toLocaleTimeString()})`);
+                //console.log(`  ✓ 세션: ${duration}분 (입실: ${inTime.toLocaleTimeString()}, 퇴실: ${outTime.toLocaleTimeString()})`);
               }
             }
           });
@@ -331,13 +331,13 @@ export async function processEntrance(studentId: string): Promise<string> {
           const setting = classTimeSettings.find(s => s.grade_name === gradeName);
           const requiredPianoTime = setting?.pt_piano || 25;
           
-          console.log(`📏 필수 피아노 시간: ${requiredPianoTime}분, 현재 수강: ${totalAttendedMinutes}분`);
+          //console.log(`📏 필수 피아노 시간: ${requiredPianoTime}분, 현재 수강: ${totalAttendedMinutes}분`);
           
           if (totalAttendedMinutes >= requiredPianoTime) {
             hasPianoCompleted = true;
-            console.log(`✅ 피아노 시간 완료 (${totalAttendedMinutes}분 >= ${requiredPianoTime}분) - 이론실로 배정`);
+            //console.log(`✅ 피아노 시간 완료 (${totalAttendedMinutes}분 >= ${requiredPianoTime}분) - 이론실로 배정`);
           } else {
-            console.log(`ℹ️  피아노 시간 부족 (${totalAttendedMinutes}분 / ${requiredPianoTime}분) - 연습실/유치부실로 배정`);
+            //console.log(`ℹ️  피아노 시간 부족 (${totalAttendedMinutes}분 / ${requiredPianoTime}분) - 연습실/유치부실로 배정`);
           }
         }
       } catch (error) {
@@ -348,22 +348,22 @@ export async function processEntrance(studentId: string): Promise<string> {
         // 피아노 완료 → 이론실로
         findEmptySqlRaw = process.env.THEORY_FIND_EMPTY_ROOM_SQL;
         roomType = 'theory';
-        console.log('방 배정 결정: 이론실 (피아노 완료, 이론 수업)');
+        //console.log('방 배정 결정: 이론실 (피아노 완료, 이론 수업)');
       } else {
         // 피아노 미완료 → 연습실/유치부실로
         if (isKindergarten) {
           findEmptySqlRaw = process.env.KINDER_FIND_EMPTY_ROOM_SQL;
           roomType = 'kinder';
-          console.log('방 배정 결정: 유치부실 (피아노 미완료)');
+          //console.log('방 배정 결정: 유치부실 (피아노 미완료)');
         } else {
           findEmptySqlRaw = process.env.PRACTICE_FIND_EMPTY_ROOM_SQL;
           roomType = 'practice';
-          console.log('방 배정 결정: 연습실 (피아노 미완료)');
+          //console.log('방 배정 결정: 연습실 (피아노 미완료)');
         }
       }
     } else if (isPianoDrum && !isKindergarten) {
       // 피아노+드럼 학생: 피아노 먼저, 연습실 없으면 드럼실
-      console.log('🎹🥁 피아노+드럼 과정 - 우선순위 체크');
+      //console.log('🎹🥁 피아노+드럼 과정 - 우선순위 체크');
       
       // 오늘 출석 기록 확인 (드럼 시간을 이미 채웠는지 확인)
       const today = normalizedInTime.toISOString().slice(0, 10);
@@ -414,9 +414,9 @@ export async function processEntrance(studentId: string): Promise<string> {
           
           if (totalAttendedMinutes >= requiredDrumTime) {
             hasDrumCompleted = true;
-            console.log(`✅ 드럼 시간 완료 (${totalAttendedMinutes}분 >= ${requiredDrumTime}분) - 피아노 연습실로 배정`);
+            //console.log(`✅ 드럼 시간 완료 (${totalAttendedMinutes}분 >= ${requiredDrumTime}분) - 피아노 연습실로 배정`);
           } else {
-            console.log(`ℹ️  드럼 시간 부족 (${totalAttendedMinutes}분 / ${requiredDrumTime}분)`);
+            //console.log(`ℹ️  드럼 시간 부족 (${totalAttendedMinutes}분 / ${requiredDrumTime}분)`);
           }
         }
       } catch (error) {
@@ -427,7 +427,7 @@ export async function processEntrance(studentId: string): Promise<string> {
         // 드럼 완료 → 피아노 연습실로
         findEmptySqlRaw = process.env.PRACTICE_FIND_EMPTY_ROOM_SQL;
         roomType = 'practice';
-        console.log('방 배정 결정: 연습실 (드럼 완료, 피아노 수업)');
+        //console.log('방 배정 결정: 연습실 (드럼 완료, 피아노 수업)');
       } else {
         // 드럼 미완료 → 연습실 먼저 확인
         const practiceCheckSql = normalizePlaceholderForEnv(process.env.PRACTICE_FIND_EMPTY_ROOM_SQL);
@@ -439,12 +439,12 @@ export async function processEntrance(studentId: string): Promise<string> {
             // 연습실 있음 → 피아노부터
             findEmptySqlRaw = process.env.PRACTICE_FIND_EMPTY_ROOM_SQL;
             roomType = 'practice';
-            console.log('방 배정 결정: 연습실 (피아노 먼저)');
+            //console.log('방 배정 결정: 연습실 (피아노 먼저)');
           } else {
             // 연습실 없음 → 드럼실로
             findEmptySqlRaw = process.env.DRUM_FIND_EMPTY_ROOM_SQL;
             roomType = 'drum';
-            console.log('방 배정 결정: 드럼실 (연습실 만실)');
+            //console.log('방 배정 결정: 드럼실 (연습실 만실)');
           }
         } else {
           // 쿼리 없으면 기본 연습실
@@ -456,18 +456,18 @@ export async function processEntrance(studentId: string): Promise<string> {
       // 드럼 수업 → 드럼실 (유치부든 아니든 드럼 과정이면 드럼실)
       findEmptySqlRaw = process.env.DRUM_FIND_EMPTY_ROOM_SQL;
       roomType = 'drum';
-      console.log('방 배정 결정: 드럼실 (드럼 과정)');
+      //console.log('방 배정 결정: 드럼실 (드럼 과정)');
     } else if (isKindergarten) {
       // 유치부 학생의 피아노 관련 과정 → 유치부실
       // (피아노+이론, 피아노+드럼, 피아노)
       findEmptySqlRaw = process.env.KINDER_FIND_EMPTY_ROOM_SQL;
       roomType = 'kinder';
-      console.log('방 배정 결정: 유치부실 (유치부 + 피아노 관련 과정)');
+      //console.log('방 배정 결정: 유치부실 (유치부 + 피아노 관련 과정)');
     } else {
       // 그 외 → 연습실 (일반 학생의 피아노+이론, 피아노+드럼, 피아노)
       findEmptySqlRaw = process.env.PRACTICE_FIND_EMPTY_ROOM_SQL;
       roomType = 'practice';
-      console.log('방 배정 결정: 연습실 (일반 학생 + 피아노 관련 과정)');
+      //console.log('방 배정 결정: 연습실 (일반 학생 + 피아노 관련 과정)');
     }
     const findEmptySql = normalizePlaceholderForEnv(findEmptySqlRaw);
     
@@ -489,7 +489,7 @@ export async function processEntrance(studentId: string): Promise<string> {
     if (!room) {
       // 원하는 방이 없을 때 - 드럼실이 아니면 이론실 확인
       if (!isDrum) {
-        console.log('🔍 원하는 방이 없음. 이론실 확인 중...');
+        //console.log('🔍 원하는 방이 없음. 이론실 확인 중...');
         const theoryRoomSqlRaw = process.env.THEORY_FIND_EMPTY_ROOM_SQL;
         const theoryRoomSql = normalizePlaceholderForEnv(theoryRoomSqlRaw);
         
@@ -498,11 +498,11 @@ export async function processEntrance(studentId: string): Promise<string> {
           const theoryRoom = Array.isArray(theoryRoomRes) ? theoryRoomRes[0] : (theoryRoomRes?.rows?.[0] ?? null);
           
           if (theoryRoom) {
-            console.log(`✅ 이론실 ${theoryRoom.room_no}번 발견. 이론실로 입실 처리`);
+            //console.log(`✅ 이론실 ${theoryRoom.room_no}번 발견. 이론실로 입실 처리`);
             room = theoryRoom;
             roomType = 'theory'; // 이론실로 변경
           } else {
-            console.log('⚠️ 이론실도 만실');
+            //console.log('⚠️ 이론실도 만실');
           }
         }
       }
@@ -545,10 +545,10 @@ export async function processEntrance(studentId: string): Promise<string> {
       throw new Error(`${sqlType} 환경변수가 설정되지 않았습니다.`);
     }
     
-    console.log('Executing SQL:', updSql);
-    console.log('Parameters:', [studentId, student.student_name, normalizedInTime.toISOString(), calculatedOutTime.toISOString(), room.room_no]);
-    console.log('Original time:', now.toISOString(), '→ Normalized time:', normalizedInTime.toISOString());
-    console.log('Calculated out time:', calculatedOutTime.toISOString());
+    //console.log('Executing SQL:', updSql);
+    //console.log('Parameters:', [studentId, student.student_name, normalizedInTime.toISOString(), calculatedOutTime.toISOString(), room.room_no]);
+    //console.log('Original time:', now.toISOString(), '→ Normalized time:', normalizedInTime.toISOString());
+    //console.log('Calculated out time:', calculatedOutTime.toISOString());
     
     // SQL 쿼리가 out_time을 포함하는지 확인하고 적절한 파라미터 전달
     if (updSql.includes('out_time')) {
@@ -563,20 +563,20 @@ export async function processEntrance(studentId: string): Promise<string> {
     // 단, 이론실 입실 시에는 제거하지 않음 (이론실 자체가 대기 공간)
     if (roomType !== 'theory') {
       const queueType = isDrum ? 'drum' : (isKindergarten ? 'kinder' : 'piano');
-      console.log(`대기열 제거: studentId=${studentId}, queueType=${queueType}`);
+      //console.log(`대기열 제거: studentId=${studentId}, queueType=${queueType}`);
       try {
         await removeFromWaitingQueue(sql, studentId, queueType);
         await reorderWaitingQueue(sql, queueType);
-        console.log(`✅ 대기열 제거 완료: ${queueType}`);
+        //console.log(`✅ 대기열 제거 완료: ${queueType}`);
       } catch (error) {
         console.error('Failed to remove from waiting queue:', error);
       }
     } else {
-      console.log(`ℹ️ 이론실 입실이므로 대기열에서 제거하지 않음`);
+      //console.log(`ℹ️ 이론실 입실이므로 대기열에서 제거하지 않음`);
     }
 
     // 출석 기록 생성
-    console.log('\n📝 출석 기록 생성 시작...');
+    //console.log('\n📝 출석 기록 생성 시작...');
     try {
       const lessonNameMap: Record<number,string> = {1:'피아노+이론',2:'피아노+드럼',3:'드럼',4:'피아노',5:'연습만'};
       const lessonName = lessonNameMap[lessonCode] || '수업';
@@ -593,11 +593,11 @@ export async function processEntrance(studentId: string): Promise<string> {
         remark: `${room.room_no}번 방`
       };
       
-      console.log('📋 출석 데이터:', JSON.stringify(attendanceData, null, 2));
+      //console.log('📋 출석 데이터:', JSON.stringify(attendanceData, null, 2));
       
       await insertAttendance(sql, attendanceData);
       
-      console.log('✅ 출석 기록 생성 완료!');
+      //console.log('✅ 출석 기록 생성 완료!');
     } catch (error) {
       console.error('❌ 출석 기록 생성 실패:', error);
       console.error('에러 상세:', error instanceof Error ? error.message : String(error));
@@ -612,7 +612,7 @@ export async function processEntrance(studentId: string): Promise<string> {
     const today = normalizedInTime.toISOString().slice(0, 10); // YYYY-MM-DD
     let todayAttendance: any[] = [];
     
-    console.log(`\n🔔 입실 메시지 생성: 날짜=${today}, 학생ID=${studentId}`);
+    //console.log(`\n🔔 입실 메시지 생성: 날짜=${today}, 학생ID=${studentId}`);
     
     try {
       const attendanceSql = normalizePlaceholderForEnv(process.env.SELECT_ATTENDANCE_BY_DATE_SQL);
@@ -621,9 +621,9 @@ export async function processEntrance(studentId: string): Promise<string> {
         const allAttendance = Array.isArray(attendanceResult) ? attendanceResult : (attendanceResult?.rows || []);
         todayAttendance = allAttendance.filter((record: any) => record.student_id === studentId);
         
-        console.log(`📊 메시지용 출석 기록: 전체=${allAttendance.length}개, 해당학생=${todayAttendance.length}개`);
+        //console.log(`📊 메시지용 출석 기록: 전체=${allAttendance.length}개, 해당학생=${todayAttendance.length}개`);
         if (todayAttendance.length > 0) {
-          console.log('📝 해당 학생 출석 기록:', JSON.stringify(todayAttendance, null, 2));
+          //console.log('📝 해당 학생 출석 기록:', JSON.stringify(todayAttendance, null, 2));
         }
       }
     } catch (error) {
@@ -635,18 +635,18 @@ export async function processEntrance(studentId: string): Promise<string> {
       // 실제 퇴실 시간(actual_out_time)이 있어야만 완료된 세션으로 간주
       // out_time은 입실 시 자동 계산되므로 완료 여부 판단에 사용하면 안됨
       const hasActualOutTime = record.actual_out_time !== null && record.actual_out_time !== undefined;
-      console.log(`  - 메시지용 레코드 ${record.attendance_num}: actual_out_time=${record.actual_out_time}, 완료=${hasActualOutTime}`);
+      //console.log(`  - 메시지용 레코드 ${record.attendance_num}: actual_out_time=${record.actual_out_time}, 완료=${hasActualOutTime}`);
       return hasActualOutTime;
     });
     
-    console.log(`✅ 메시지용 완료된 세션: ${completedSessions.length}개`);
+    //console.log(`✅ 메시지용 완료된 세션: ${completedSessions.length}개`);
     
     if (completedSessions.length > 0) {
       // 중도입실 - 이전에 퇴실한 기록이 있음
       
       // 모든 완료된 세션의 시간을 합산
       let totalAttendedMinutes = 0;
-      console.log(`📌 메시지용 모든 완료된 세션의 시간 합산:`);
+      //console.log(`📌 메시지용 모든 완료된 세션의 시간 합산:`);
       
       completedSessions.forEach((session: any) => {
         if (session.in_time && session.actual_out_time) {
@@ -659,12 +659,12 @@ export async function processEntrance(studentId: string): Promise<string> {
             console.error(`❌ 메시지용 세션 #${session.attendance_num}: 음수 시간 (무시)`);
           } else {
             totalAttendedMinutes += durationMinutes;
-            console.log(`   - 세션 #${session.attendance_num}: ${durationMinutes}분`);
+            //console.log(`   - 세션 #${session.attendance_num}: ${durationMinutes}분`);
           }
         }
       });
       
-      console.log(`✅ 메시지용 총 수강 시간: ${totalAttendedMinutes}분`);
+      //console.log(`✅ 메시지용 총 수강 시간: ${totalAttendedMinutes}분`);
       
       // 중도입실 메시지
       const roomTypeKorean = roomType === 'theory' ? '이론실' : (isDrum ? '드럼실' : (isKindergarten ? '유치부실' : '연습실'));
@@ -708,7 +708,7 @@ export async function removeFromWaitingQueueAction(queueId: string, studentId: s
     // 대기열 순서 재정렬
     await reorderWaitingQueue(sql, queueType);
     
-    console.log(`대기열에서 학생 ${studentId} 삭제 완료 (타입: ${queueType})`);
+    //console.log(`대기열에서 학생 ${studentId} 삭제 완료 (타입: ${queueType})`);
     
     return { success: true, message: '대기열에서 삭제되었습니다.' };
   } catch (error) {

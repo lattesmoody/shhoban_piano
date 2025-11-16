@@ -65,7 +65,7 @@ export async function registerUser(
     );
 
     // 성공 로그(민감한 식별자 노출 방지)
-    console.log('새로운 사용자가 생성되었습니다.');
+    //console.log('새로운 사용자가 생성되었습니다.');
 
   } catch (error: any) {
     // 4. 에러 처리 (특히, 아이디 중복 에러)

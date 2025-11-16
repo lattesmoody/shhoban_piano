@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 
 // 임시: 기능 테스트 중 (실제 초기화 기능은 구현 예정)
 export async function resetDailyStatus() {
-  console.log('🔄 일일 수강 현황 초기화 - 테스트 모드');
+  //console.log('🔄 일일 수강 현황 초기화 - 테스트 모드');
   
   try {
     // TODO: 실제 초기화 로직 구현 예정

@@ -47,7 +47,7 @@ export default function MyPageClient({ studentsData }: Props) {
   // 30초마다 자동 새로고침
   useEffect(() => {
     const refreshInterval = setInterval(() => {
-      console.log('🔄 자동 새로고침 (30초)');
+      //console.log('🔄 자동 새로고침 (30초)');
       router.refresh();
     }, 30000);
     

@@ -82,14 +82,14 @@ export async function POST(request: NextRequest) {
 
     // 중복 입실된 경우 처리
     if (allFoundRooms.length > 1) {
-      console.log(`⚠️ 수강생 ${studentId}번이 ${allFoundRooms.length}개 방에 중복 입실되어 있습니다:`, allFoundRooms);
+      //console.log(`⚠️ 수강생 ${studentId}번이 ${allFoundRooms.length}개 방에 중복 입실되어 있습니다:`, allFoundRooms);
       
       // 가장 최근 입실한 방을 선택 (in_time 기준)
       allFoundRooms.sort((a, b) => new Date(b.in_time).getTime() - new Date(a.in_time).getTime());
       
       const duplicateMessage = `수강생 ${studentId}번이 ${allFoundRooms.length}개 방에 중복 입실되어 있습니다.\n가장 최근 입실한 ${allFoundRooms[0].roomType === 'practice' ? '연습실' : allFoundRooms[0].roomType === 'kinder' ? '유치부실' : '드럼실'} ${allFoundRooms[0].room_no}번에서 퇴실 처리합니다.`;
       
-      console.log(duplicateMessage);
+      //console.log(duplicateMessage);
     }
 
     // 선택된 방 (중복인 경우 가장 최근, 단일인 경우 해당 방)
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
     const updateAttendanceSql = normalizePlaceholders(updateAttendanceSqlRaw);
     if (updateAttendanceSql) {
       await sql.query(updateAttendanceSql, [actualOutTime, studentId, today]);
-      console.log('✅ 출석 기록 out_time 업데이트 완료');
+      //console.log('✅ 출석 기록 out_time 업데이트 완료');
     }
     
     // 3-2. actual_out_time 업데이트 (실제 퇴실 시간)
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
       `;
       
       const result = await sql.query(updateActualOutTimeSql, [actualOutTime, studentId, today]);
-      console.log(`✅ 출석 기록 actual_out_time 업데이트 완료: ${actualOutTime}`);
+      //console.log(`✅ 출석 기록 actual_out_time 업데이트 완료: ${actualOutTime}`);
       
       // 시간 차이 분석
       if (currentRoom.out_time) {
@@ -150,11 +150,11 @@ export async function POST(request: NextRequest) {
         const diffMinutes = Math.round((actualTime.getTime() - expectedTime.getTime()) / (1000 * 60));
         
         if (diffMinutes > 0) {
-          console.log(`⏰ 연장 수업: ${diffMinutes}분 초과`);
+          //console.log(`⏰ 연장 수업: ${diffMinutes}분 초과`);
         } else if (diffMinutes < 0) {
-          console.log(`⏰ 조기 퇴실: ${Math.abs(diffMinutes)}분 일찍`);
+          //console.log(`⏰ 조기 퇴실: ${Math.abs(diffMinutes)}분 일찍`);
         } else {
-          console.log(`⏰ 정시 퇴실`);
+          //console.log(`⏰ 정시 퇴실`);
         }
       }
       
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
 
     // 6. 중복 입실된 다른 방들도 정리 (같은 student_id로 입실된 모든 방)
     if (allFoundRooms.length > 1) {
-      console.log(`🧹 중복 입실된 다른 방들 정리 중...`);
+      //console.log(`🧹 중복 입실된 다른 방들 정리 중...`);
       
       for (let i = 1; i < allFoundRooms.length; i++) {
         const duplicateRoom = allFoundRooms[i];
@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
           const clearDuplicateRoomSql = normalizePlaceholders(clearDuplicateRoomSqlRaw);
           if (clearDuplicateRoomSql) {
             await sql.query(clearDuplicateRoomSql, [duplicateRoom.room_no]);
-            console.log(`✅ ${duplicateRoom.roomType === 'practice' ? '연습실' : duplicateRoom.roomType === 'kinder' ? '유치부실' : '드럼실'} ${duplicateRoom.room_no}번 중복 입실 정리 완료`);
+            //console.log(`✅ ${duplicateRoom.roomType === 'practice' ? '연습실' : duplicateRoom.roomType === 'kinder' ? '유치부실' : '드럼실'} ${duplicateRoom.room_no}번 중복 입실 정리 완료`);
           }
         } catch (error) {
           console.error(`❌ ${duplicateRoom.roomType} ${duplicateRoom.room_no}번 정리 오류:`, error);
@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
 
     // 7. "피아노+이론" 학생이 피아노 시간을 모두 채웠는지 확인하고 이론실로 자동 입실
     try {
-      console.log('\n🔍 이론실 자동 입실 체크...');
+      //console.log('\n🔍 이론실 자동 입실 체크...');
       
       // 오늘의 과정 정보 조회
       const dayCode = ((now.getDay() + 6) % 7) + 1; // 월=1..일=7
@@ -223,7 +223,7 @@ export async function POST(request: NextRequest) {
         
         if (course && Number(course.lesson_code) === 1) {
           // 피아노+이론 과정인 경우
-          console.log('✅ 피아노+이론 과정 확인');
+          //console.log('✅ 피아노+이론 과정 확인');
           
           // 오늘 출석 기록 조회
           const attendanceQuery = normalizePlaceholders(process.env.SELECT_ATTENDANCE_BY_DATE_SQL);
@@ -237,7 +237,7 @@ export async function POST(request: NextRequest) {
               record.actual_out_time !== null && record.actual_out_time !== undefined
             );
             
-            console.log(`📊 완료된 세션: ${completedSessions.length}개`);
+            //console.log(`📊 완료된 세션: ${completedSessions.length}개`);
             
             // 총 수강 시간 계산
             let totalAttendedMinutes = 0;
@@ -252,7 +252,7 @@ export async function POST(request: NextRequest) {
               }
             });
             
-            console.log(`⏱️  총 수강 시간: ${totalAttendedMinutes}분`);
+            //console.log(`⏱️  총 수강 시간: ${totalAttendedMinutes}분`);
             
             // 학생 정보 조회
             const studentQuery = normalizePlaceholders(process.env.SELECT_STUDENT_BY_ID_SQL);
@@ -284,13 +284,13 @@ export async function POST(request: NextRequest) {
                   const requiredTheoryTime = setting?.pt_theory || 15;
                   const requiredTotalTime = requiredPianoTime + requiredTheoryTime; // 피아노 + 이론
                   
-                  console.log(`📚 ${gradeName} 피아노+이론 필수 시간: ${requiredTotalTime}분 (피아노 ${requiredPianoTime}분 + 이론 ${requiredTheoryTime}분)`);
+                  //console.log(`📚 ${gradeName} 피아노+이론 필수 시간: ${requiredTotalTime}분 (피아노 ${requiredPianoTime}분 + 이론 ${requiredTheoryTime}분)`);
                   
                   // 피아노+이론 전체 시간을 모두 채웠는지 확인
                   if (totalAttendedMinutes >= requiredTotalTime) {
-                    console.log('✅ 피아노+이론 전체 시간 완료!');
+                    //console.log('✅ 피아노+이론 전체 시간 완료!');
                   } else if (totalAttendedMinutes >= requiredPianoTime) {
-                    console.log('✅ 피아노 시간 완료! 이론실로 자동 입실 시도...');
+                    //console.log('✅ 피아노 시간 완료! 이론실로 자동 입실 시도...');
                     
                     // 이론실 빈 방 찾기
                     const theoryRoomQuery = normalizePlaceholders(process.env.THEORY_FIND_EMPTY_ROOM_SQL);
@@ -314,24 +314,24 @@ export async function POST(request: NextRequest) {
                             theoryRoom.room_no
                           ]);
                           
-                          console.log(`✅ 이론실 ${theoryRoom.room_no}번 자동 입실 완료`);
+                          //console.log(`✅ 이론실 ${theoryRoom.room_no}번 자동 입실 완료`);
                           message += `\n\n📚 피아노 시간 완료! 이론실 ${theoryRoom.room_no}번으로 자동 입실되었습니다. (이론 ${theoryDuration}분)`;
                         }
                       } else {
-                        console.log('⚠️ 이론실에 빈 방이 없습니다.');
+                        //console.log('⚠️ 이론실에 빈 방이 없습니다.');
                         message += `\n\n⚠️ 피아노 시간은 완료했으나 이론실에 빈 방이 없습니다.`;
                       }
                     }
                   } else {
                     const remainingTime = requiredTotalTime - totalAttendedMinutes;
-                    console.log(`ℹ️  피아노+이론 시간 부족: ${remainingTime}분 더 필요 (전체 ${requiredTotalTime}분 중 ${totalAttendedMinutes}분 완료)`);
+                    //console.log(`ℹ️  피아노+이론 시간 부족: ${remainingTime}분 더 필요 (전체 ${requiredTotalTime}분 중 ${totalAttendedMinutes}분 완료)`);
                   }
                 }
               }
             }
           }
         } else {
-          console.log('ℹ️  피아노+이론 과정이 아닙니다.');
+          //console.log('ℹ️  피아노+이론 과정이 아닙니다.');
         }
       }
     } catch (autoTheoryError) {
@@ -341,11 +341,11 @@ export async function POST(request: NextRequest) {
 
     // 8. "피아노+드럼" 학생이 드럼실에서 퇴실 시 드럼 시간을 모두 채웠는지 확인하고 연습실로 자동 입실
     try {
-      console.log('\n🔍 피아노+드럼 자동 입실 체크...');
+      //console.log('\n🔍 피아노+드럼 자동 입실 체크...');
       
       // 드럼실에서 퇴실한 경우만 처리
       if (roomType === 'drum') {
-        console.log('✅ 드럼실 퇴실 확인');
+        //console.log('✅ 드럼실 퇴실 확인');
         
         // 오늘의 과정 정보 조회
         const dayCode = ((now.getDay() + 6) % 7) + 1; // 월=1..일=7
@@ -356,7 +356,7 @@ export async function POST(request: NextRequest) {
           
           if (course && Number(course.lesson_code) === 2) {
             // 피아노+드럼 과정인 경우
-            console.log('✅ 피아노+드럼 과정 확인');
+            //console.log('✅ 피아노+드럼 과정 확인');
             
             // 오늘 출석 기록 조회
             const attendanceQuery = normalizePlaceholders(process.env.SELECT_ATTENDANCE_BY_DATE_SQL);
@@ -370,7 +370,7 @@ export async function POST(request: NextRequest) {
                 record.actual_out_time !== null && record.actual_out_time !== undefined
               );
               
-              console.log(`📊 완료된 세션: ${completedSessions.length}개`);
+              //console.log(`📊 완료된 세션: ${completedSessions.length}개`);
               
               // 총 수강 시간 계산
               let totalAttendedMinutes = 0;
@@ -385,7 +385,7 @@ export async function POST(request: NextRequest) {
                 }
               });
               
-              console.log(`⏱️  총 수강 시간: ${totalAttendedMinutes}분`);
+              //console.log(`⏱️  총 수강 시간: ${totalAttendedMinutes}분`);
               
               // 학생 정보 조회
               const studentQuery = normalizePlaceholders(process.env.SELECT_STUDENT_BY_ID_SQL);
@@ -417,13 +417,13 @@ export async function POST(request: NextRequest) {
                     const requiredPianoTime = setting?.pd_piano || 35;
                     const requiredTotalTime = requiredPianoTime + requiredDrumTime; // 피아노 + 드럼
                     
-                    console.log(`🥁 ${gradeName} 피아노+드럼 필수 시간: ${requiredTotalTime}분 (피아노 ${requiredPianoTime}분 + 드럼 ${requiredDrumTime}분)`);
+                    //console.log(`🥁 ${gradeName} 피아노+드럼 필수 시간: ${requiredTotalTime}분 (피아노 ${requiredPianoTime}분 + 드럼 ${requiredDrumTime}분)`);
                     
                     // 피아노+드럼 전체 시간을 모두 채웠는지 확인
                     if (totalAttendedMinutes >= requiredTotalTime) {
-                      console.log('✅ 피아노+드럼 전체 시간 완료!');
+                      //console.log('✅ 피아노+드럼 전체 시간 완료!');
                     } else if (totalAttendedMinutes >= requiredDrumTime) {
-                      console.log('✅ 드럼 시간 완료! 피아노 연습실로 자동 입실 시도...');
+                      //console.log('✅ 드럼 시간 완료! 피아노 연습실로 자동 입실 시도...');
                       
                       // 연습실 빈 방 찾기
                       const practiceRoomQuery = normalizePlaceholders(process.env.PRACTICE_FIND_EMPTY_ROOM_SQL);
@@ -457,28 +457,28 @@ export async function POST(request: NextRequest) {
                               ]);
                             }
                             
-                            console.log(`✅ 연습실 ${practiceRoom.room_no}번 자동 입실 완료`);
+                            //console.log(`✅ 연습실 ${practiceRoom.room_no}번 자동 입실 완료`);
                             message += `\n\n🎹 드럼 시간 완료! 연습실 ${practiceRoom.room_no}번으로 자동 입실되었습니다. (피아노 ${pianoDuration}분)`;
                           }
                         } else {
-                          console.log('⚠️ 연습실에 빈 방이 없습니다.');
+                          //console.log('⚠️ 연습실에 빈 방이 없습니다.');
                           message += `\n\n⚠️ 드럼 시간은 완료했으나 연습실에 빈 방이 없습니다.`;
                         }
                       }
                     } else {
                       const remainingTime = requiredTotalTime - totalAttendedMinutes;
-                      console.log(`ℹ️  피아노+드럼 시간 부족: ${remainingTime}분 더 필요 (전체 ${requiredTotalTime}분 중 ${totalAttendedMinutes}분 완료)`);
+                      //console.log(`ℹ️  피아노+드럼 시간 부족: ${remainingTime}분 더 필요 (전체 ${requiredTotalTime}분 중 ${totalAttendedMinutes}분 완료)`);
                     }
                   }
                 }
               }
             }
           } else {
-            console.log('ℹ️  피아노+드럼 과정이 아닙니다.');
+            //console.log('ℹ️  피아노+드럼 과정이 아닙니다.');
           }
         }
       } else {
-        console.log('ℹ️  드럼실 퇴실이 아닙니다.');
+        //console.log('ℹ️  드럼실 퇴실이 아닙니다.');
       }
     } catch (autoPianoError) {
       console.error('⚠️ 피아노 연습실 자동 입실 처리 중 오류 (퇴실은 완료됨):', autoPianoError);

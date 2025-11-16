@@ -215,7 +215,7 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
   // 30초마다 자동 새로고침
   useEffect(() => {
     const refreshInterval = setInterval(() => {
-      console.log('🔄 자동 새로고침 (30초)');
+      //console.log('🔄 자동 새로고침 (30초)');
       window.location.reload();
     }, 30000); // 30초 = 30000ms
     

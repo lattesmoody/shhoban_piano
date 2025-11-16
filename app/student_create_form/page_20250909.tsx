@@ -68,7 +68,7 @@ export default function StudentCreateForm() {
     }
     
     // 유효성 검사 통과 시
-    console.log('제출된 데이터:', formData);
+    //console.log('제출된 데이터:', formData);
     alert('수강생이 성공적으로 생성되었습니다!');
     // 여기에 서버로 데이터를 전송하는 API 호출 로직을 추가합니다.
     // 예: fetch('/api/students', { method: 'POST', body: JSON.stringify(formData) });
