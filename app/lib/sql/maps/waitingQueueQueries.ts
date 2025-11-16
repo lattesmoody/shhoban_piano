@@ -10,7 +10,7 @@ function normalizePlaceholders(raw: string | undefined): string {
 }
 
 export type WaitingQueueRow = {
-  queue_id: number;
+  queue_id: number | string; // number (DB) 또는 string (이론실 임시 ID)
   student_id: string;
   student_name: string;
   student_grade: number | null;

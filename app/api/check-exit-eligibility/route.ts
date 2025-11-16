@@ -71,7 +71,36 @@ export async function POST(request: NextRequest) {
 
     const currentRoom = allFoundRooms[0];
     
-    // 4. 수강 시간 도달 여부 판단
+    // 4. 학생 정보 및 과정 정보 조회
+    const studentInfoSqlRaw = process.env.SELECT_STUDENT_BY_ID_SQL;
+    const studentInfoSql = normalizePlaceholders(studentInfoSqlRaw);
+    let studentInfo: any = null;
+    let lessonCode: number | null = null;
+    
+    if (studentInfoSql) {
+      const studentResult: any = await sql.query(studentInfoSql, [studentId]);
+      studentInfo = Array.isArray(studentResult) ? studentResult[0] : (studentResult?.rows?.[0] ?? null);
+    }
+    
+    if (studentInfo) {
+      const today = new Date();
+      const kstOffset = 9 * 60 * 60 * 1000;
+      const kstTime = new Date(today.getTime() + kstOffset);
+      const dayCode = kstTime.getDay();
+      
+      const courseQueryRaw = process.env.SELECT_STUDENT_COURSE_BY_DAY_SQL;
+      const courseQuery = normalizePlaceholders(courseQueryRaw);
+      
+      if (courseQuery) {
+        const courseResult: any = await sql.query(courseQuery, [studentId, dayCode]);
+        const course = Array.isArray(courseResult) ? courseResult[0] : (courseResult?.rows?.[0] ?? null);
+        if (course) {
+          lessonCode = Number(course.lesson_code);
+        }
+      }
+    }
+    
+    // 5. 수강 시간 도달 여부 판단
     const inTime = new Date(currentRoom.in_time);
     const expectedOutTime = new Date(currentRoom.out_time);
     
@@ -79,6 +108,98 @@ export async function POST(request: NextRequest) {
     const expectedMinutes = Math.floor((expectedOutTime.getTime() - inTime.getTime()) / (1000 * 60));
     
     if (elapsedMinutes >= expectedMinutes) {
+      // 현재 방의 수강 시간은 충족됨
+      
+      // 6. "피아노+이론" 학생인 경우, 이론 시간 체크
+      if (lessonCode === 1 && (currentRoom.roomType === 'practice' || currentRoom.roomType === 'kinder')) {
+        // 피아노+이론 과정이고, 연습실/유치부실에서 퇴실하려는 경우
+        console.log('🎹📚 피아노+이론 학생 - 이론 시간 체크');
+        
+        // 오늘 출석 기록 조회
+        const kstOffset = 9 * 60 * 60 * 1000;
+        const kstTime = new Date(now.getTime() + kstOffset);
+        const today = kstTime.toISOString().slice(0, 10);
+        
+        const attendanceSqlRaw = process.env.SELECT_ATTENDANCE_BY_DATE_SQL;
+        const attendanceSql = normalizePlaceholders(attendanceSqlRaw);
+        
+        if (attendanceSql) {
+          const attendanceResult: any = await sql.query(attendanceSql, [today]);
+          const allAttendance = Array.isArray(attendanceResult) ? attendanceResult : (attendanceResult?.rows || []);
+          const todayAttendance = allAttendance.filter((record: any) => record.student_id === studentId);
+          
+          // 완료된 세션들 (actual_out_time이 있는 것만)
+          const completedSessions = todayAttendance.filter((record: any) => 
+            record.actual_out_time !== null && record.actual_out_time !== undefined
+          );
+          
+          // 총 수강 시간 계산
+          let totalAttendedMinutes = 0;
+          completedSessions.forEach((session: any) => {
+            if (session.in_time && session.actual_out_time) {
+              const sessionInTime = new Date(session.in_time);
+              const sessionOutTime = new Date(session.actual_out_time);
+              const duration = Math.floor((sessionOutTime.getTime() - sessionInTime.getTime()) / (1000 * 60));
+              if (duration >= 0) {
+                totalAttendedMinutes += duration;
+              }
+            }
+          });
+          
+          // 현재 세션 시간 추가 (아직 actual_out_time이 없으므로)
+          totalAttendedMinutes += elapsedMinutes;
+          
+          // 학년별 필수 시간 조회
+          const classTimeSettingsSqlRaw = process.env.SELECT_CLASS_TIME_SETTINGS_SQL;
+          const classTimeSettingsSql = normalizePlaceholders(classTimeSettingsSqlRaw);
+          
+          if (classTimeSettingsSql) {
+            const settingsResult: any = await sql.query(classTimeSettingsSql, []);
+            const classTimeSettings = Array.isArray(settingsResult) ? settingsResult : (settingsResult?.rows || []);
+            
+            let gradeName = '초등부';
+            if (studentInfo.student_grade) {
+              switch (Number(studentInfo.student_grade)) {
+                case 1: gradeName = '유치부'; break;
+                case 2: gradeName = '초등부'; break;
+                case 3: gradeName = '중고등부'; break;
+                case 4: gradeName = '대회부'; break;
+                case 5: gradeName = '연주회부'; break;
+                case 6: gradeName = '신입생'; break;
+                case 7: gradeName = '기타'; break;
+              }
+            }
+            
+            const setting = classTimeSettings.find((s: any) => s.grade_name === gradeName);
+            const requiredPianoTime = setting?.pt_piano || 25;
+            const requiredTheoryTime = setting?.pt_theory || 25;
+            const requiredTotalTime = requiredPianoTime + requiredTheoryTime;
+            
+            console.log(`📊 총 수강: ${totalAttendedMinutes}분 / 필수: ${requiredTotalTime}분 (피아노: ${requiredPianoTime}분, 이론: ${requiredTheoryTime}분)`);
+            
+            if (totalAttendedMinutes < requiredTotalTime) {
+              const remainingMinutes = requiredTotalTime - totalAttendedMinutes;
+              return NextResponse.json({
+                status: 'time_insufficient',
+                message: `이론 ${remainingMinutes}분 남았습니다.`,
+                remainingMinutes,
+                roomInfo: {
+                  roomType: currentRoom.roomType,
+                  roomNo: currentRoom.room_no,
+                  studentName: currentRoom.student_name,
+                  inTime: currentRoom.in_time,
+                  expectedOutTime: currentRoom.out_time,
+                  elapsedMinutes,
+                  expectedMinutes,
+                  totalAttendedMinutes,
+                  requiredTotalTime
+                }
+              });
+            }
+          }
+        }
+      }
+      
       // 수강 시간 충족 - 퇴실 가능
       return NextResponse.json({
         status: 'can_exit',

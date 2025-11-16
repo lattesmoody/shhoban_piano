@@ -588,6 +588,7 @@ export async function processEntrance(studentId: string): Promise<string> {
         student_grade: student.student_grade,
         course_name: lessonName,
         in_time: normalizedInTime.toISOString(),
+        actual_in_time: normalizedInTime.toISOString(), // 실제 입실 시간 (KST)
         out_time: calculatedOutTime.toISOString(),
         actual_out_time: null, // 입실 시에는 null, 퇴실 시에 실제 시간 기록
         remark: `${room.room_no}번 방`

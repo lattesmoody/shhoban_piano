@@ -17,6 +17,7 @@ export type AttendanceRow = {
   student_grade: number | null;
   course_name: string | null;
   in_time: string | null;
+  actual_in_time: string | null;    // 실제 입실 시점 시간 (KST)
   out_time: string | null;          // 퇴실 예정 시간 (입실 시 계산)
   actual_out_time: string | null;   // 실제 퇴실 시점 시간 (퇴실 버튼 클릭 시)
   remark: string | null;
@@ -45,8 +46,9 @@ export async function insertAttendance(sql: any, payload: Omit<AttendanceRow, 'a
     payload.student_grade,
     payload.course_name,
     payload.in_time,
+    payload.actual_in_time,  // 실제 입실 시간 (KST)
     payload.out_time,
-    // actual_out_time은 SQL에서 NULL로 설정됨 (8번째 파라미터)
+    // actual_out_time은 SQL에서 NULL로 설정됨 (9번째 파라미터)
     payload.remark,
   ]);
 }
