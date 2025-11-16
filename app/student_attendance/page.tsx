@@ -39,7 +39,14 @@ export default async function StudentAttendancePage({ searchParams }: { searchPa
   const d = Number(resolvedSearchParams?.d ?? today.getDate());
 
   const sql = neon(process.env.DATABASE_URL!);
-  const rows = await selectAttendanceByDate(sql, y, m, d);
+  let rows = await selectAttendanceByDate(sql, y, m, d);
+  
+  // 가나다 순서로 정렬
+  rows = rows.sort((a, b) => {
+    const nameA = a.student_name || '';
+    const nameB = b.student_name || '';
+    return nameA.localeCompare(nameB, 'ko-KR');
+  });
 
   return (
     <>
@@ -97,7 +104,7 @@ export default async function StudentAttendancePage({ searchParams }: { searchPa
                   <td>{getGradeText(r.student_grade)}</td>
                   <td>{r.course_name || ''}</td>
                   <td>{formatTimeCell(r.in_time)}</td>
-                  <td>{formatTimeCell(r.out_time)}</td>
+                  <td>{formatTimeCell(r.actual_out_time)}</td>
                   <td>{r.remark || ''}</td>
                 </tr>
               ))
