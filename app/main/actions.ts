@@ -361,8 +361,8 @@ export async function processEntrance(studentId: string): Promise<string> {
           //console.log('방 배정 결정: 연습실 (피아노 미완료)');
         }
       }
-    } else if (isPianoDrum && !isKindergarten) {
-      // 피아노+드럼 학생: 피아노 먼저, 연습실 없으면 드럼실
+    } else if (isPianoDrum) {
+      // 피아노+드럼 학생: 연습실/유치부실 있으면 피아노부터, 없으면 드럼실부터
       //console.log('🎹🥁 피아노+드럼 과정 - 우선순위 체크');
       
       // 오늘 출석 기록 확인 (드럼 시간을 이미 채웠는지 확인)
@@ -424,32 +424,64 @@ export async function processEntrance(studentId: string): Promise<string> {
       }
       
       if (hasDrumCompleted) {
-        // 드럼 완료 → 피아노 연습실로
-        findEmptySqlRaw = process.env.PRACTICE_FIND_EMPTY_ROOM_SQL;
-        roomType = 'practice';
-        //console.log('방 배정 결정: 연습실 (드럼 완료, 피아노 수업)');
-      } else {
-        // 드럼 미완료 → 연습실 먼저 확인
-        const practiceCheckSql = normalizePlaceholderForEnv(process.env.PRACTICE_FIND_EMPTY_ROOM_SQL);
-        if (practiceCheckSql) {
-          const practiceRoomRes: any = await (sql as any).query(practiceCheckSql);
-          const practiceRoom = Array.isArray(practiceRoomRes) ? practiceRoomRes[0] : (practiceRoomRes?.rows?.[0] ?? null);
-          
-          if (practiceRoom) {
-            // 연습실 있음 → 피아노부터
-            findEmptySqlRaw = process.env.PRACTICE_FIND_EMPTY_ROOM_SQL;
-            roomType = 'practice';
-            //console.log('방 배정 결정: 연습실 (피아노 먼저)');
-          } else {
-            // 연습실 없음 → 드럼실로
-            findEmptySqlRaw = process.env.DRUM_FIND_EMPTY_ROOM_SQL;
-            roomType = 'drum';
-            //console.log('방 배정 결정: 드럼실 (연습실 만실)');
-          }
+        // 드럼 완료 → 피아노 연습실/유치부실로
+        if (isKindergarten) {
+          findEmptySqlRaw = process.env.KINDER_FIND_EMPTY_ROOM_SQL;
+          roomType = 'kinder';
+          //console.log('방 배정 결정: 유치부실 (드럼 완료, 피아노 수업)');
         } else {
-          // 쿼리 없으면 기본 연습실
           findEmptySqlRaw = process.env.PRACTICE_FIND_EMPTY_ROOM_SQL;
           roomType = 'practice';
+          //console.log('방 배정 결정: 연습실 (드럼 완료, 피아노 수업)');
+        }
+      } else {
+        // 드럼 미완료 → 연습실/유치부실 먼저 확인
+        if (isKindergarten) {
+          // 유치부 학생: 유치부실 확인
+          const kinderCheckSql = normalizePlaceholderForEnv(process.env.KINDER_FIND_EMPTY_ROOM_SQL);
+          if (kinderCheckSql) {
+            const kinderRoomRes: any = await (sql as any).query(kinderCheckSql);
+            const kinderRoom = Array.isArray(kinderRoomRes) ? kinderRoomRes[0] : (kinderRoomRes?.rows?.[0] ?? null);
+            
+            if (kinderRoom) {
+              // 유치부실 있음 → 피아노부터
+              findEmptySqlRaw = process.env.KINDER_FIND_EMPTY_ROOM_SQL;
+              roomType = 'kinder';
+              //console.log('방 배정 결정: 유치부실 (피아노 먼저)');
+            } else {
+              // 유치부실 없음 → 드럼실로
+              findEmptySqlRaw = process.env.DRUM_FIND_EMPTY_ROOM_SQL;
+              roomType = 'drum';
+              //console.log('방 배정 결정: 드럼실 (유치부실 만실)');
+            }
+          } else {
+            // 쿼리 없으면 기본 드럼실
+            findEmptySqlRaw = process.env.DRUM_FIND_EMPTY_ROOM_SQL;
+            roomType = 'drum';
+          }
+        } else {
+          // 일반 학생: 연습실 확인
+          const practiceCheckSql = normalizePlaceholderForEnv(process.env.PRACTICE_FIND_EMPTY_ROOM_SQL);
+          if (practiceCheckSql) {
+            const practiceRoomRes: any = await (sql as any).query(practiceCheckSql);
+            const practiceRoom = Array.isArray(practiceRoomRes) ? practiceRoomRes[0] : (practiceRoomRes?.rows?.[0] ?? null);
+            
+            if (practiceRoom) {
+              // 연습실 있음 → 피아노부터
+              findEmptySqlRaw = process.env.PRACTICE_FIND_EMPTY_ROOM_SQL;
+              roomType = 'practice';
+              //console.log('방 배정 결정: 연습실 (피아노 먼저)');
+            } else {
+              // 연습실 없음 → 드럼실로
+              findEmptySqlRaw = process.env.DRUM_FIND_EMPTY_ROOM_SQL;
+              roomType = 'drum';
+              //console.log('방 배정 결정: 드럼실 (연습실 만실)');
+            }
+          } else {
+            // 쿼리 없으면 기본 드럼실
+            findEmptySqlRaw = process.env.DRUM_FIND_EMPTY_ROOM_SQL;
+            roomType = 'drum';
+          }
         }
       }
     } else if (isDrum) {
