@@ -281,11 +281,15 @@ export async function POST(request: NextRequest) {
                   
                   const setting = classTimeSettings.find((s: any) => s.grade_name === gradeName);
                   const requiredPianoTime = setting?.pt_piano || 35;
+                  const requiredTheoryTime = setting?.pt_theory || 15;
+                  const requiredTotalTime = requiredPianoTime + requiredTheoryTime; // 피아노 + 이론
                   
-                  console.log(`📚 ${gradeName} 피아노 필수 시간: ${requiredPianoTime}분`);
+                  console.log(`📚 ${gradeName} 피아노+이론 필수 시간: ${requiredTotalTime}분 (피아노 ${requiredPianoTime}분 + 이론 ${requiredTheoryTime}분)`);
                   
-                  // 피아노 시간을 모두 채웠는지 확인
-                  if (totalAttendedMinutes >= requiredPianoTime) {
+                  // 피아노+이론 전체 시간을 모두 채웠는지 확인
+                  if (totalAttendedMinutes >= requiredTotalTime) {
+                    console.log('✅ 피아노+이론 전체 시간 완료!');
+                  } else if (totalAttendedMinutes >= requiredPianoTime) {
                     console.log('✅ 피아노 시간 완료! 이론실로 자동 입실 시도...');
                     
                     // 이론실 빈 방 찾기
@@ -319,8 +323,8 @@ export async function POST(request: NextRequest) {
                       }
                     }
                   } else {
-                    const remainingTime = requiredPianoTime - totalAttendedMinutes;
-                    console.log(`ℹ️  피아노 시간 부족: ${remainingTime}분 더 필요`);
+                    const remainingTime = requiredTotalTime - totalAttendedMinutes;
+                    console.log(`ℹ️  피아노+이론 시간 부족: ${remainingTime}분 더 필요 (전체 ${requiredTotalTime}분 중 ${totalAttendedMinutes}분 완료)`);
                   }
                 }
               }
@@ -410,11 +414,15 @@ export async function POST(request: NextRequest) {
                     
                     const setting = classTimeSettings.find((s: any) => s.grade_name === gradeName);
                     const requiredDrumTime = setting?.pd_drum || 20;
+                    const requiredPianoTime = setting?.pd_piano || 35;
+                    const requiredTotalTime = requiredPianoTime + requiredDrumTime; // 피아노 + 드럼
                     
-                    console.log(`🥁 ${gradeName} 드럼 필수 시간: ${requiredDrumTime}분`);
+                    console.log(`🥁 ${gradeName} 피아노+드럼 필수 시간: ${requiredTotalTime}분 (피아노 ${requiredPianoTime}분 + 드럼 ${requiredDrumTime}분)`);
                     
-                    // 드럼 시간을 모두 채웠는지 확인
-                    if (totalAttendedMinutes >= requiredDrumTime) {
+                    // 피아노+드럼 전체 시간을 모두 채웠는지 확인
+                    if (totalAttendedMinutes >= requiredTotalTime) {
+                      console.log('✅ 피아노+드럼 전체 시간 완료!');
+                    } else if (totalAttendedMinutes >= requiredDrumTime) {
                       console.log('✅ 드럼 시간 완료! 피아노 연습실로 자동 입실 시도...');
                       
                       // 연습실 빈 방 찾기
@@ -458,8 +466,8 @@ export async function POST(request: NextRequest) {
                         }
                       }
                     } else {
-                      const remainingTime = requiredDrumTime - totalAttendedMinutes;
-                      console.log(`ℹ️  드럼 시간 부족: ${remainingTime}분 더 필요`);
+                      const remainingTime = requiredTotalTime - totalAttendedMinutes;
+                      console.log(`ℹ️  피아노+드럼 시간 부족: ${remainingTime}분 더 필요 (전체 ${requiredTotalTime}분 중 ${totalAttendedMinutes}분 완료)`);
                     }
                   }
                 }
