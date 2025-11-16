@@ -90,7 +90,8 @@ async function getMyPageData() {
       
       if (!aLatestIn) return 1;
       if (!bLatestIn) return -1;
-      return aLatestIn.localeCompare(bLatestIn);
+      // 타입 체크 후 문자열로 확정
+      return (aLatestIn as string).localeCompare(bLatestIn as string);
     });
     
     return studentsData;
