@@ -76,6 +76,7 @@ async function getMyPageData() {
           member_id: student?.member_id || null,
           member_name: student?.member_name || null,
           special_notes: student?.special_notes || null,
+          vehicle_yn: student?.vehicle_yn || false,
           sessions: []
         });
       }

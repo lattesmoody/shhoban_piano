@@ -21,6 +21,7 @@ type StudentData = {
   member_id: string | null;
   member_name: string | null;
   special_notes: string | null;
+  vehicle_yn: boolean | null;
   sessions: Session[];
 };
 
@@ -157,7 +158,7 @@ export default function MyPageClient({ studentsData, members }: Props) {
       case 'hm01': // 정영롱
         return '■';
       case 'hm02': // 전상은
-        return '⭐';
+        return '★';
       case 'hm03': // 강시1
         return '●';
       default:
@@ -289,7 +290,7 @@ export default function MyPageClient({ studentsData, members }: Props) {
                           <td>{getMemberIcon(memberId)}</td>
                           <td>{getExitTime(latestSession)}</td>
                           <td className={styles.iconCell}>
-                            {student.sessions.some(s => s.remark?.includes('차')) && '🚗'}
+                            {student.vehicle_yn ? '탑승' : ''}
                           </td>
                           <td className={styles.remarkCell}>
                             {student.special_notes || '-'}
