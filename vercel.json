@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/auto-exit",
-      "schedule": "*/1 * * * *"
+      "schedule": "* * * * *"
     }
   ]
 }

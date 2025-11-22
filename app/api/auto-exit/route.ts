@@ -96,11 +96,16 @@ async function handleAutoExit() {
 }
 
 export async function GET(request: Request) {
-  // Vercel Cron 인증 확인
+  // Vercel Cron에서 호출될 때는 인증 우회 (헤더에 특수값 체크)
   const authHeader = request.headers.get('Authorization');
+  const userAgent = request.headers.get('user-agent');
   const cronSecret = process.env.CRON_SECRET;
   
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  // Vercel Cron인지 확인 (user-agent에 'vercel-cron' 포함)
+  const isVercelCron = userAgent?.includes('vercel-cron') || false;
+  
+  // Vercel Cron이 아니고 인증이 필요한 경우
+  if (!isVercelCron && cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ 
       success: false, 
       error: 'Unauthorized' 
@@ -120,7 +125,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  // Vercel Cron 인증 확인
+  // POST는 수동 호출용이므로 항상 인증 필요
   const authHeader = request.headers.get('Authorization');
   const cronSecret = process.env.CRON_SECRET;
   
