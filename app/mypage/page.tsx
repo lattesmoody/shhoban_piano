@@ -6,6 +6,12 @@ import dotenv from 'dotenv';
 
 dotenv.config({ path: './.env.development.local' });
 
+type MemberInfo = {
+  member_id: string;
+  member_name: string;
+  member_code: string;
+};
+
 // 환경변수에서 SQL 쿼리 가져오기
 function normalizePlaceholder(raw: string | undefined): string {
   const input = (raw || '').trim();
@@ -22,6 +28,11 @@ async function getMyPageData() {
   try {
     // 오늘 날짜
     const today = new Date().toISOString().slice(0, 10);
+    
+    // 강사(멤버) 정보 조회
+    const membersSql = normalizePlaceholder(process.env.SELECT_ALL_MEMBERS_SQL);
+    const membersResult: any = await sql.query(membersSql);
+    const allMembers: MemberInfo[] = Array.isArray(membersResult) ? membersResult : (membersResult?.rows || []);
     
     // 오늘의 모든 출석 기록 조회
     const attendanceSql = normalizePlaceholder(process.env.SELECT_ATTENDANCE_BY_DATE_SQL);
@@ -57,10 +68,14 @@ async function getMyPageData() {
       const studentId = record.student_id;
       
       if (!studentMap.has(studentId)) {
+        const student = allStudents.find((s: any) => s.student_id === studentId);
         studentMap.set(studentId, {
           student_id: studentId,
           student_name: record.student_name,
           student_grade: record.student_grade,
+          member_id: student?.member_id || null,
+          member_name: student?.member_name || null,
+          special_notes: student?.special_notes || null,
           sessions: []
         });
       }
@@ -97,11 +112,17 @@ async function getMyPageData() {
       return aTime - bTime;
     });
     
-    return studentsData;
+    return {
+      studentsData,
+      members: allMembers
+    };
     
   } catch (error) {
     console.error('MyPage 데이터 조회 오류:', error);
-    return [];
+    return {
+      studentsData: [],
+      members: []
+    };
   }
 }
 
@@ -113,8 +134,8 @@ export default async function MyPage() {
     redirect('/member_login');
   }
   
-  const studentsData = await getMyPageData();
+  const { studentsData, members } = await getMyPageData();
   
-  return <MyPageClient studentsData={studentsData} />;
+  return <MyPageClient studentsData={studentsData} members={members} />;
 }
 

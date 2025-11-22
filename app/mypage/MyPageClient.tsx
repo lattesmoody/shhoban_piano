@@ -18,16 +18,39 @@ type StudentData = {
   student_id: string;
   student_name: string;
   student_grade: number | null;
+  member_id: string | null;
+  member_name: string | null;
+  special_notes: string | null;
   sessions: Session[];
+};
+
+type MemberInfo = {
+  member_id: string;
+  member_name: string;
+  member_code: string;
 };
 
 type Props = {
   studentsData: StudentData[];
+  members: MemberInfo[];
 };
 
-export default function MyPageClient({ studentsData }: Props) {
+export default function MyPageClient({ studentsData, members }: Props) {
   const router = useRouter();
   const [currentTime, setCurrentTime] = useState('');
+  
+  // DB에서 가져온 강사 정보로 매핑 생성 (원장, 관리자 제외)
+  const memberNamesMap: { [key: string]: string } = {};
+  const filteredMembers = members.filter(m => m.member_code !== '99' && m.member_code !== '0');
+  
+  filteredMembers.forEach(member => {
+    memberNamesMap[member.member_id] = member.member_name;
+  });
+  
+  // 강사 ID 목록 (member_id 순서로 정렬, 원장/관리자 제외)
+  const memberOrder = filteredMembers
+    .sort((a, b) => a.member_id.localeCompare(b.member_id))
+    .map(m => m.member_id);
   
   // 현재 시각 표시
   useEffect(() => {
@@ -53,6 +76,52 @@ export default function MyPageClient({ studentsData }: Props) {
     
     return () => clearInterval(refreshInterval);
   }, [router]);
+  
+  // 분침을 5분 단위로 정규화하여 표시
+  const formatNormalizedMinutes = (timeString: string | null): string => {
+    if (!timeString) return '-';
+    try {
+      const date = new Date(timeString);
+      const minute = date.getMinutes();
+      
+      // 5분 단위로 정규화
+      let normalizedMinute;
+      if (minute >= 0 && minute <= 2) {
+        normalizedMinute = 0;
+      } else if (minute >= 3 && minute <= 7) {
+        normalizedMinute = 5;
+      } else if (minute >= 8 && minute <= 12) {
+        normalizedMinute = 10;
+      } else if (minute >= 13 && minute <= 17) {
+        normalizedMinute = 15;
+      } else if (minute >= 18 && minute <= 22) {
+        normalizedMinute = 20;
+      } else if (minute >= 23 && minute <= 27) {
+        normalizedMinute = 25;
+      } else if (minute >= 28 && minute <= 32) {
+        normalizedMinute = 30;
+      } else if (minute >= 33 && minute <= 37) {
+        normalizedMinute = 35;
+      } else if (minute >= 38 && minute <= 42) {
+        normalizedMinute = 40;
+      } else if (minute >= 43 && minute <= 47) {
+        normalizedMinute = 45;
+      } else if (minute >= 48 && minute <= 52) {
+        normalizedMinute = 50;
+      } else if (minute >= 53 && minute <= 57) {
+        normalizedMinute = 55;
+      } else if (minute >= 58 && minute <= 59) {
+        // 다음 시간 00분으로 간주
+        normalizedMinute = 0;
+      } else {
+        normalizedMinute = 0;
+      }
+      
+      return String(normalizedMinute);
+    } catch {
+      return '-';
+    }
+  };
   
   // 시간 포맷 (HH:mm)
   const formatTime = (timeString: string | null): string => {
@@ -80,6 +149,28 @@ export default function MyPageClient({ studentsData }: Props) {
       case 7: return '기타';
       default: return '-';
     }
+  };
+  
+  // 강사별 아이콘 반환
+  const getMemberIcon = (memberId: string): string => {
+    switch (memberId) {
+      case 'hm01': // 정영롱
+        return '■';
+      case 'hm02': // 전상은
+        return '⭐';
+      case 'hm03': // 강시1
+        return '●';
+      default:
+        return '●';
+    }
+  };
+  
+  // 비고에서 방 번호 추출
+  const extractRoomNumber = (remark: string | null): string => {
+    if (!remark) return '-';
+    // 숫자만 추출
+    const match = remark.match(/\d+/);
+    return match ? match[0] : '-';
   };
   
   // 과정 아이콘
@@ -115,13 +206,31 @@ export default function MyPageClient({ studentsData }: Props) {
     return isActive ? `${name}*` : name;
   };
   
-  // 테이블을 3개 컬럼으로 나누기
-  const itemsPerColumn = Math.ceil(studentsData.length / 3);
-  const columns = [
-    studentsData.slice(0, itemsPerColumn),
-    studentsData.slice(itemsPerColumn, itemsPerColumn * 2),
-    studentsData.slice(itemsPerColumn * 2)
-  ];
+  // 강사별로 그룹화
+  const groupByMember = () => {
+    const memberGroups: { [key: string]: StudentData[] } = {};
+    
+    // 모든 강사에 대해 빈 배열 초기화
+    memberOrder.forEach(memberId => {
+      memberGroups[memberId] = [];
+    });
+    
+    studentsData.forEach(student => {
+      const memberId = student.member_id || memberOrder[0]; // 기본값은 첫 번째 강사
+      if (memberGroups[memberId]) {
+        memberGroups[memberId].push(student);
+      } else {
+        // 만약 해당 강사가 목록에 없으면 첫 번째 강사에 추가
+        if (memberOrder[0]) {
+          memberGroups[memberOrder[0]].push(student);
+        }
+      }
+    });
+    
+    return memberGroups;
+  };
+  
+  const memberGroups = groupByMember();
   
   return (
     <div className={styles.container}>
@@ -141,54 +250,58 @@ export default function MyPageClient({ studentsData }: Props) {
         <div className={styles.timeDisplay}>{currentTime}</div>
         
         <div className={styles.tableContainer}>
-          {columns.map((columnData, colIndex) => (
-            <div key={colIndex} className={styles.column}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>연습<br/>번호</th>
-                    <th>이름</th>
-                    <th>입실<br/>시간</th>
-                    <th>연습<br/>종료</th>
-                    <th>원장</th>
-                    <th>강사</th>
-                    <th>퇴실<br/>시간</th>
-                    <th>차량</th>
-                    <th>비고</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {columnData.map((student) => {
-                    const isActive = hasActiveSession(student.sessions);
-                    const latestSession = student.sessions[student.sessions.length - 1];
-                    
-                    return (
-                      <tr 
-                        key={student.student_id}
-                        className={isActive ? styles.activeRow : ''}
-                      >
-                        <td>{student.student_id}</td>
-                        <td className={styles.nameCell}>
-                          {getDisplayName(student.student_name, isActive)}
-                        </td>
-                        <td>{formatTime(latestSession?.in_time)}</td>
-                        <td>{getExitTime(latestSession)}</td>
-                        <td>원장</td>
-                        <td>강사</td>
-                        <td>{getExitTime(latestSession)}</td>
-                        <td className={styles.iconCell}>
-                          {student.sessions.some(s => s.remark?.includes('차')) && '🚗'}
-                        </td>
-                        <td className={styles.remarkCell}>
-                          {latestSession?.remark || ''}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ))}
+          {memberOrder.map((memberId) => {
+            const columnData = memberGroups[memberId];
+            const memberName = memberNamesMap[memberId] || memberId;
+            
+            return (
+              <div key={memberId} className={styles.column}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>연습<br/>번호</th>
+                      <th>이름</th>
+                      <th>입실<br/>시간</th>
+                      <th>연습<br/>종료</th>
+                      <th>원장</th>
+                      <th>{memberName}</th>
+                      <th>퇴실<br/>시간</th>
+                      <th>차량</th>
+                      <th>비고</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {columnData.map((student) => {
+                      const isActive = hasActiveSession(student.sessions);
+                      const latestSession = student.sessions[student.sessions.length - 1];
+                      
+                      return (
+                        <tr 
+                          key={student.student_id}
+                        >
+                          <td>{extractRoomNumber(latestSession?.remark)}</td>
+                          <td className={styles.nameCell}>
+                            {student.student_name}
+                          </td>
+                          <td>{formatTime(latestSession?.in_time)}</td>
+                          <td>{formatNormalizedMinutes(latestSession?.out_time)}</td>
+                          <td>●</td>
+                          <td>{getMemberIcon(memberId)}</td>
+                          <td>{getExitTime(latestSession)}</td>
+                          <td className={styles.iconCell}>
+                            {student.sessions.some(s => s.remark?.includes('차')) && '🚗'}
+                          </td>
+                          <td className={styles.remarkCell}>
+                            {student.special_notes || '-'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })}
         </div>
       </main>
     </div>

@@ -110,14 +110,6 @@
   vertical-align: middle;
 }
 
-.activeRow {
-  background-color: #90EE90 !important;
-}
-
-.activeRow td {
-  font-weight: 600;
-}
-
 .nameCell {
   text-align: left !important;
   padding-left: 0.5rem !important;
