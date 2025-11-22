@@ -13,6 +13,18 @@ function normalizePlaceholders(raw: string | undefined): string {
   return normalized;
 }
 
+// KST 시간을 ISO 문자열로 변환 (UTC 변환 없이)
+function toKSTISOString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+09:00`;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { studentId } = await request.json();
@@ -23,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     const sql = neon(process.env.DATABASE_URL!);
     const now = new Date();
-    const actualOutTime = now.toISOString();
+    const actualOutTime = toKSTISOString(now);
 
     // 1. 해당 학생이 현재 어느 방에 있는지 확인 (모든 방 타입에서 검색)
     let allFoundRooms: any[] = [];
@@ -116,7 +128,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. 출석 기록 업데이트 (실제 퇴실 시간 기록)
-    const today = now.toISOString().slice(0, 10); // YYYY-MM-DD 형식
+    const today = toKSTISOString(now).slice(0, 10); // YYYY-MM-DD 형식
     
     // 3-1. 기존 out_time 업데이트 (호환성 유지)
     const updateAttendanceSqlRaw = process.env.UPDATE_ATTENDANCE_OUT_TIME_SQL;
@@ -309,8 +321,8 @@ export async function POST(request: NextRequest) {
                           await sql.query(theoryEntranceQuery, [
                             studentId,
                             student.student_name,
-                            theoryInTime.toISOString(),
-                            theoryOutTime.toISOString(),
+                            toKSTISOString(theoryInTime),
+                            toKSTISOString(theoryOutTime),
                             theoryRoom.room_no
                           ]);
                           
@@ -444,15 +456,15 @@ export async function POST(request: NextRequest) {
                               await sql.query(practiceEntranceQuery, [
                                 studentId,
                                 student.student_name,
-                                practiceInTime.toISOString(),
-                                practiceOutTime.toISOString(),
+                                toKSTISOString(practiceInTime),
+                                toKSTISOString(practiceOutTime),
                                 practiceRoom.room_no
                               ]);
                             } else {
                               await sql.query(practiceEntranceQuery, [
                                 studentId,
                                 student.student_name,
-                                practiceInTime.toISOString(),
+                                toKSTISOString(practiceInTime),
                                 practiceRoom.room_no
                               ]);
                             }

@@ -15,6 +15,18 @@ export async function logoutAction() {
   redirect('/');
 }
 
+// KST 시간을 ISO 문자열로 변환 (UTC 변환 없이)
+function toKSTISOString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+09:00`;
+}
+
 
 // 입실 처리: studentId 입력 → 오늘 요일 과정 조회 → 해당 타입 방에 입실 처리 후 메시지 반환
 export async function processEntrance(studentId: string): Promise<string> {
@@ -140,7 +152,7 @@ export async function processEntrance(studentId: string): Promise<string> {
         let remainingClassTime = classDuration;
         
         // 오늘 출석 기록 확인 (중도입실 판단)
-        const today = normalizedInTime.toISOString().slice(0, 10); // YYYY-MM-DD
+        const today = toKSTISOString(normalizedInTime).slice(0, 10); // YYYY-MM-DD
         //console.log(`📅 중도입실 체크: 날짜=${today}, 학생ID=${studentId}`);
         
         try {
@@ -205,7 +217,7 @@ export async function processEntrance(studentId: string): Promise<string> {
         const outTime = new Date(normalizedInTime.getTime() + remainingClassTime * 60 * 1000);
         
         //console.log(`수업 시간 계산: 학년=${gradeName}, 레슨=${lessonCode}, 기본시간=${classDuration}분, 실제시간=${remainingClassTime}분`);
-        //console.log(`입실: ${normalizedInTime.toISOString()} → 퇴실: ${outTime.toISOString()}`);
+        //console.log(`입실: ${toKSTISOString(normalizedInTime)} → 퇴실: ${toKSTISOString(outTime)}`);
         
         return outTime;
       } catch (error) {
@@ -282,7 +294,7 @@ export async function processEntrance(studentId: string): Promise<string> {
       //console.log('🎹📚 피아노+이론 과정 - 피아노 완료 여부 체크');
       
       // 오늘 출석 기록 확인 (피아노 시간을 이미 채웠는지 확인)
-      const today = normalizedInTime.toISOString().slice(0, 10);
+      const today = toKSTISOString(normalizedInTime).slice(0, 10);
       let hasPianoCompleted = false;
       
       try {
@@ -366,7 +378,7 @@ export async function processEntrance(studentId: string): Promise<string> {
       //console.log('🎹🥁 피아노+드럼 과정 - 우선순위 체크');
       
       // 오늘 출석 기록 확인 (드럼 시간을 이미 채웠는지 확인)
-      const today = normalizedInTime.toISOString().slice(0, 10);
+      const today = toKSTISOString(normalizedInTime).slice(0, 10);
       let hasDrumCompleted = false;
       
       try {
@@ -578,17 +590,17 @@ export async function processEntrance(studentId: string): Promise<string> {
     }
     
     //console.log('Executing SQL:', updSql);
-    //console.log('Parameters:', [studentId, student.student_name, normalizedInTime.toISOString(), calculatedOutTime.toISOString(), room.room_no]);
-    //console.log('Original time:', now.toISOString(), '→ Normalized time:', normalizedInTime.toISOString());
-    //console.log('Calculated out time:', calculatedOutTime.toISOString());
+    //console.log('Parameters:', [studentId, student.student_name, toKSTISOString(normalizedInTime), toKSTISOString(calculatedOutTime), room.room_no]);
+    //console.log('Original time:', toKSTISOString(now), '→ Normalized time:', toKSTISOString(normalizedInTime));
+    //console.log('Calculated out time:', toKSTISOString(calculatedOutTime));
     
     // SQL 쿼리가 out_time을 포함하는지 확인하고 적절한 파라미터 전달
     if (updSql.includes('out_time')) {
       // out_time을 포함하는 쿼리
-      await (sql as any).query(updSql, [studentId, student.student_name, normalizedInTime.toISOString(), calculatedOutTime.toISOString(), room.room_no]);
+      await (sql as any).query(updSql, [studentId, student.student_name, toKSTISOString(normalizedInTime), toKSTISOString(calculatedOutTime), room.room_no]);
     } else {
       // 기존 쿼리 (out_time 미포함)
-      await (sql as any).query(updSql, [studentId, student.student_name, normalizedInTime.toISOString(), room.room_no]);
+      await (sql as any).query(updSql, [studentId, student.student_name, toKSTISOString(normalizedInTime), room.room_no]);
     }
 
     // 대기열에서 제거 (입실 완료)
@@ -614,14 +626,14 @@ export async function processEntrance(studentId: string): Promise<string> {
       const lessonName = lessonNameMap[lessonCode] || '수업';
       
       const attendanceData = {
-        attendance_date: normalizedInTime.toISOString().slice(0, 10), // YYYY-MM-DD 형식
+        attendance_date: toKSTISOString(normalizedInTime).slice(0, 10), // YYYY-MM-DD 형식
         student_id: studentId,
         student_name: student.student_name,
         student_grade: student.student_grade,
         course_name: lessonName,
-        in_time: normalizedInTime.toISOString(),
-        actual_in_time: normalizedInTime.toISOString(), // 실제 입실 시간 (KST)
-        out_time: calculatedOutTime.toISOString(),
+        in_time: toKSTISOString(normalizedInTime),
+        actual_in_time: toKSTISOString(normalizedInTime), // 실제 입실 시간 (KST)
+        out_time: toKSTISOString(calculatedOutTime),
         actual_out_time: null, // 입실 시에는 null, 퇴실 시에 실제 시간 기록
         remark: `${room.room_no}번 방`
       };
@@ -642,7 +654,7 @@ export async function processEntrance(studentId: string): Promise<string> {
     const lessonName = lessonNameMap[lessonCode] || '수업';
     
     // 오늘 출석 기록 확인 (중도입실 판단)
-    const today = normalizedInTime.toISOString().slice(0, 10); // YYYY-MM-DD
+    const today = toKSTISOString(normalizedInTime).slice(0, 10); // YYYY-MM-DD
     let todayAttendance: any[] = [];
     
     //console.log(`\n🔔 입실 메시지 생성: 날짜=${today}, 학생ID=${studentId}`);

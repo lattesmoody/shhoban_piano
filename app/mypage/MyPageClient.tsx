@@ -15,6 +15,7 @@ type Session = {
   exit_minute_status: number;  // 1, 2, 3
   director_status: number;      // 1, 2, 3
   teacher_status: number;       // 1, 2, 3
+  vehicle_status: number;       // 1=탑승 대기, 2=탑승 완료
 };
 
 type StudentData = {
@@ -46,7 +47,7 @@ export default function MyPageClient({ studentsData, members }: Props) {
   // 드럼 상태 업데이트 핸들러
   const handleDrumStatusClick = async (
     attendance_num: number,
-    field: 'exit_minute' | 'director' | 'teacher',
+    field: 'exit_minute' | 'director' | 'teacher' | 'vehicle',
     current_status: number,
     course_name: string
   ) => {
@@ -120,6 +121,13 @@ export default function MyPageClient({ studentsData, members }: Props) {
       return styles.pianoDrumBlack; // 검은색 - 피아노 연주 중
     }
     
+    return '';
+  };
+  
+  // 차량 상태 텍스트 반환
+  const getVehicleStatusText = (status: number): string => {
+    if (status === 1) return '탑승 대기';
+    if (status === 2) return '탑승 완료';
     return '';
   };
   
@@ -340,24 +348,24 @@ export default function MyPageClient({ studentsData, members }: Props) {
             
             return (
               <div key={memberId} className={styles.column}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>연습<br/>번호</th>
-                      <th>이름</th>
-                      <th>입실<br/>시간</th>
-                      <th>연습<br/>종료</th>
-                      <th>원장</th>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>연습<br/>번호</th>
+                    <th>이름</th>
+                    <th>입실<br/>시간</th>
+                    <th>연습<br/>종료</th>
+                    <th>원장</th>
                       <th>{memberName}</th>
-                      <th>퇴실<br/>시간</th>
-                      <th>차량</th>
-                      <th>비고</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {columnData.map((student) => {
-                      const isActive = hasActiveSession(student.sessions);
-                      const latestSession = student.sessions[student.sessions.length - 1];
+                    <th>퇴실<br/>시간</th>
+                    <th>차량</th>
+                    <th>비고</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {columnData.map((student) => {
+                    const isActive = hasActiveSession(student.sessions);
+                    const latestSession = student.sessions[student.sessions.length - 1];
                       const isDrum = latestSession?.course_name?.includes('드럼');
                       
                       // 피아노, 피아노+이론, 드럼, 피아노+드럼 모두 클릭 가능
@@ -365,16 +373,16 @@ export default function MyPageClient({ studentsData, members }: Props) {
                         latestSession.course_name.includes('피아노') ||
                         latestSession.course_name.includes('드럼')
                       );
-                      
-                      return (
-                        <tr 
-                          key={student.student_id}
-                        >
+                    
+                    return (
+                      <tr 
+                        key={student.student_id}
+                      >
                           <td>{extractRoomNumber(latestSession?.remark)}</td>
-                          <td className={styles.nameCell}>
+                        <td className={styles.nameCell}>
                             {student.student_name}
-                          </td>
-                          <td>{formatTime(latestSession?.in_time)}</td>
+                        </td>
+                        <td>{formatTime(latestSession?.in_time)}</td>
                           
                           {/* 연습종료 - 클릭 가능 */}
                           <td 
@@ -419,18 +427,30 @@ export default function MyPageClient({ studentsData, members }: Props) {
                           </td>
                           
                           <td>{getExitTime(latestSession)}</td>
-                          <td className={styles.iconCell}>
-                            {student.vehicle_yn ? '탑승' : ''}
+                          
+                          {/* 차량 - 클릭 가능 (차량 이용 학생만) */}
+                          <td 
+                            className={`${styles.iconCell} ${student.vehicle_yn ? styles.vehicleClickable : ''}`}
+                            onClick={() => student.vehicle_yn && handleDrumStatusClick(
+                              latestSession.attendance_num,
+                              'vehicle',
+                              latestSession.vehicle_status,
+                              latestSession.course_name
+                            )}
+                            style={{ cursor: student.vehicle_yn ? 'pointer' : 'default' }}
+                          >
+                            {student.vehicle_yn ? getVehicleStatusText(latestSession.vehicle_status) : ''}
                           </td>
+                          
                           <td className={styles.remarkCell}>
                             {student.special_notes || '-'}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
             );
           })}
         </div>

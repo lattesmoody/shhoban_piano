@@ -171,6 +171,16 @@
   background-color: #f5f5f5;
 }
 
+.vehicleClickable {
+  cursor: pointer;
+  user-select: none;
+  font-weight: bold;
+}
+
+.vehicleClickable:hover {
+  background-color: #e8f5e9; /* 연한 녹색 */
+}
+
 /* 반응형 */
 @media (max-width: 1400px) {
   .tableContainer {

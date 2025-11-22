@@ -22,12 +22,24 @@ function normalizePlaceholder(raw: string | undefined): string {
   return normalized;
 }
 
+// KST 시간을 ISO 문자열로 변환 (UTC 변환 없이)
+function toKSTISOString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+09:00`;
+}
+
 async function getMyPageData() {
   const sql = neon(process.env.DATABASE_URL!);
   
   try {
-    // 오늘 날짜
-    const today = new Date().toISOString().slice(0, 10);
+    // 오늘 날짜 (KST 기준)
+    const today = toKSTISOString(new Date()).slice(0, 10);
     
     // 강사(멤버) 정보 조회
     const membersSql = normalizePlaceholder(process.env.SELECT_ALL_MEMBERS_SQL);
@@ -90,7 +102,8 @@ async function getMyPageData() {
         remark: record.remark,
         exit_minute_status: record.exit_minute_status || 1,
         director_status: record.director_status || 1,
-        teacher_status: record.teacher_status || 1
+        teacher_status: record.teacher_status || 1,
+        vehicle_status: record.vehicle_status || 1, // 추가
       });
     });
     
