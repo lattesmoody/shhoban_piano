@@ -12,6 +12,9 @@ type Session = {
   actual_out_time: string | null;
   course_name: string;
   remark: string;
+  exit_minute_status: number;  // 1, 2, 3
+  director_status: number;      // 1, 2, 3
+  teacher_status: number;       // 1, 2, 3
 };
 
 type StudentData = {
@@ -39,6 +42,86 @@ type Props = {
 export default function MyPageClient({ studentsData, members }: Props) {
   const router = useRouter();
   const [currentTime, setCurrentTime] = useState('');
+  
+  // 드럼 상태 업데이트 핸들러
+  const handleDrumStatusClick = async (
+    attendance_num: number,
+    field: 'exit_minute' | 'director' | 'teacher',
+    current_status: number,
+    course_name: string
+  ) => {
+    try {
+      const response = await fetch('/api/update-drum-status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          attendance_num,
+          field,
+          current_status,
+          course_name,
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // 페이지 새로고침
+        router.refresh();
+      } else {
+        console.error('상태 업데이트 실패:', data.error);
+      }
+    } catch (error) {
+      console.error('상태 업데이트 오류:', error);
+    }
+  };
+  
+  // 상태에 따른 아이콘 반환 (피아노+드럼 5단계 지원)
+  const getStatusIcon = (status: number, memberId: string, type: 'director' | 'teacher'): string => {
+    if (status === 1) return '-';
+    
+    if (type === 'director') {
+      // 원장 컬럼: ○ → ● → ○ → ●
+      if (status === 2 || status === 4) return '○';
+      return '●'; // status 3 or 5
+    }
+    
+    // 강사 컬럼: 강사별로 다른 아이콘
+    if (status === 2 || status === 4) {
+      // 빈 아이콘
+      switch (memberId) {
+        case 'hm01': return 'ㅁ'; // 정영롱
+        case 'hm02': return '☆'; // 전상은
+        case 'hm03': return '○'; // 강시1
+        default: return '□';
+      }
+    }
+    
+    // status === 3 or 5 - 찬 아이콘
+    return getMemberIcon(memberId);
+  };
+  
+  // 상태에 따른 색상 클래스 반환 (피아노+드럼용)
+  const getStatusColorClass = (status: number, courseName: string): string => {
+    const isPianoDrum = courseName && (
+      courseName.includes('피아노') && courseName.includes('드럼')
+    );
+    
+    if (!isPianoDrum) {
+      // 드럼만 있는 경우 빨간색
+      return courseName?.includes('드럼') ? styles.drumClickable : '';
+    }
+    
+    // 피아노+드럼: 2,3단계는 파란색 (드럼), 4,5단계는 검은색 (피아노)
+    if (status === 2 || status === 3) {
+      return styles.pianoDrumBlue; // 파란색 - 드럼 연주 중
+    } else if (status === 4 || status === 5) {
+      return styles.pianoDrumBlack; // 검은색 - 피아노 연주 중
+    }
+    
+    return '';
+  };
   
   // DB에서 가져온 강사 정보로 매핑 생성 (원장, 관리자 제외)
   const memberNamesMap: { [key: string]: string } = {};
@@ -275,6 +358,13 @@ export default function MyPageClient({ studentsData, members }: Props) {
                     {columnData.map((student) => {
                       const isActive = hasActiveSession(student.sessions);
                       const latestSession = student.sessions[student.sessions.length - 1];
+                      const isDrum = latestSession?.course_name?.includes('드럼');
+                      
+                      // 피아노, 피아노+이론, 드럼, 피아노+드럼 모두 클릭 가능
+                      const isClickable = latestSession?.course_name && (
+                        latestSession.course_name.includes('피아노') ||
+                        latestSession.course_name.includes('드럼')
+                      );
                       
                       return (
                         <tr 
@@ -285,9 +375,49 @@ export default function MyPageClient({ studentsData, members }: Props) {
                             {student.student_name}
                           </td>
                           <td>{formatTime(latestSession?.in_time)}</td>
-                          <td>{formatNormalizedMinutes(latestSession?.out_time)}</td>
-                          <td>●</td>
-                          <td>{getMemberIcon(memberId)}</td>
+                          
+                          {/* 연습종료 - 클릭 가능 */}
+                          <td 
+                            className={getStatusColorClass(latestSession.exit_minute_status, latestSession?.course_name || '')}
+                            onClick={() => isClickable && handleDrumStatusClick(
+                              latestSession.attendance_num,
+                              'exit_minute',
+                              latestSession.exit_minute_status,
+                              latestSession.course_name
+                            )}
+                            style={{ cursor: isClickable ? 'pointer' : 'default' }}
+                          >
+                            {formatNormalizedMinutes(latestSession?.out_time)}
+                          </td>
+                          
+                          {/* 원장 - 클릭 가능, 상태에 따른 아이콘 */}
+                          <td 
+                            className={getStatusColorClass(latestSession.director_status, latestSession?.course_name || '')}
+                            onClick={() => isClickable && handleDrumStatusClick(
+                              latestSession.attendance_num,
+                              'director',
+                              latestSession.director_status,
+                              latestSession.course_name
+                            )}
+                            style={{ cursor: isClickable ? 'pointer' : 'default' }}
+                          >
+                            {isClickable ? getStatusIcon(latestSession.director_status, memberId, 'director') : '●'}
+                          </td>
+                          
+                          {/* 강사 - 클릭 가능, 상태에 따른 아이콘 */}
+                          <td 
+                            className={getStatusColorClass(latestSession.teacher_status, latestSession?.course_name || '')}
+                            onClick={() => isClickable && handleDrumStatusClick(
+                              latestSession.attendance_num,
+                              'teacher',
+                              latestSession.teacher_status,
+                              latestSession.course_name
+                            )}
+                            style={{ cursor: isClickable ? 'pointer' : 'default' }}
+                          >
+                            {isClickable ? getStatusIcon(latestSession.teacher_status, memberId, 'teacher') : getMemberIcon(memberId)}
+                          </td>
+                          
                           <td>{getExitTime(latestSession)}</td>
                           <td className={styles.iconCell}>
                             {student.vehicle_yn ? '탑승' : ''}

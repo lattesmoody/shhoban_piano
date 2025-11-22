@@ -87,7 +87,10 @@ async function getMyPageData() {
         out_time: record.out_time,
         actual_out_time: record.actual_out_time,
         course_name: record.course_name,
-        remark: record.remark
+        remark: record.remark,
+        exit_minute_status: record.exit_minute_status || 1,
+        director_status: record.director_status || 1,
+        teacher_status: record.teacher_status || 1
       });
     });
     

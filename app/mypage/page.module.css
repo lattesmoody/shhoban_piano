@@ -138,6 +138,39 @@
   white-space: nowrap;
 }
 
+.drumClickable {
+  color: red !important;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+}
+
+.drumClickable:hover {
+  background-color: #ffebee;
+}
+
+.pianoDrumBlue {
+  color: blue !important;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pianoDrumBlue:hover {
+  background-color: #e3f2fd;
+}
+
+.pianoDrumBlack {
+  color: black !important;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pianoDrumBlack:hover {
+  background-color: #f5f5f5;
+}
+
 /* 반응형 */
 @media (max-width: 1400px) {
   .tableContainer {
