@@ -329,8 +329,14 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
   return (
     <div className="flex flex-col min-h-screen bg-gray-200">
       <header className="bg-gray-800 text-white shadow-md">
-        <div className="container mx-auto flex justify-between items-center p-3">
+        <div className="container mx-auto flex justify-between items-center p-3 relative">
           <div className="text-sm">관리자 님, 환영합니다 :)</div>
+          
+          {/* 중앙 시계 표시 */}
+          <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white text-gray-900 px-4 py-1 text-sm font-bold shadow-sm rounded-sm">
+            {currentTime}
+          </div>
+
           <nav className="flex items-center justify-center space-x-0">
             <Link href="/main" className="px-6 py-1 text-sm hover:text-gray-300 bg-gray-800 hover:bg-gray-700 transition-colors">Main</Link>
             <Link href="/setting_manage" className="px-6 py-1 text-sm hover:text-gray-300 bg-gray-800 hover:bg-gray-700 transition-colors">Manage</Link>
@@ -344,35 +350,39 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
 
       <main className="flex-grow p-4">
         <div className="container p-4 mx-auto bg-white shadow-lg" style={{ borderTop: '3px solid #F97316' }}>
-          <div className="flex justify-end mb-2 text-sm font-semibold text-gray-700">{currentTime}</div>
           <div className="grid grid-cols-1 gap-0 xl:grid-cols-12">
             <div className="xl:col-span-10">
               <div className="grid grid-cols-2 gap-0 mb-0 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-12">
                 {roomData.map(room => (<RoomCard key={room.id} {...room} />))}
               </div>
-              <div className="grid grid-cols-10 gap-0">
+              <div className="grid grid-cols-12 gap-1">
+                {/* 유치부 (6칸) */}
                 <div className="grid grid-cols-6 col-span-6 gap-0">
                   {juniorData.map(jr => (<JuniorCard key={jr.id} {...jr} />))}
                 </div>
-                <div className="flex flex-col col-span-3 gap-0">
-                  <div className="border border-gray-400 rounded-md">
+                
+                {/* 드럼실 (4칸) */}
+                <div className="flex flex-col col-span-4 gap-0">
+                  <div className="border border-gray-400 rounded-md h-full">
                     <div className="p-2 font-bold text-center text-white bg-blue-700 rounded-t-md">드럼실</div>
                     <div className="p-2"><DrumRoomCompact rows={drumRows} classTimeSettings={classTimeSettings} studentCourseInfos={studentCourseInfos} /></div>
                   </div>
                 </div>
-                <div className="flex items-end gap-2">
-                  <div className="flex-grow text-xs border border-gray-400 rounded-md">
-                    <div className="p-2 font-bold bg-gray-200 border-b border-gray-400 rounded-t-md">&lt;학습 과정 모형&gt;</div>
-                    <ul className="p-2 space-y-1">
-                      <li>⚫ : 피아노+이론</li>
-                      <li>◆ : 피아노+드럼</li>
-                      <li>■ : 드럼</li>
-                      <li>▲ : 피아노</li>
-                      <Link href="/theoryroom_manage">
-                        <button className="px-6 py-2 font-bold text-white bg-blue-700 rounded-md hover:bg-blue-800 transition-colors">이론실</button>
-                      </Link>
-                    </ul>
-                  </div>
+
+                {/* 입/퇴실 버튼 (2칸) - 세로 배치 */}
+                <div className="flex flex-col col-span-2 gap-1">
+                  <button 
+                    className="flex-1 px-2 py-2 text-xl font-bold text-white bg-orange-500 rounded-lg hover:bg-orange-600 transition-colors" 
+                    onClick={onEntrance}
+                  >
+                    입실
+                  </button>
+                  <button 
+                    className="flex-1 px-2 py-2 text-xl font-bold text-black bg-yellow-400 border-4 border-yellow-500 rounded-lg hover:bg-yellow-500 hover:border-yellow-600 transition-colors" 
+                    onClick={onExit}
+                  >
+                    퇴실
+                  </button>
                 </div>
               </div>
             </div>
@@ -385,6 +395,7 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
                 studentCourseInfos={studentCourseInfos}
                 showDeleteButton={false}
                 showExpectedTime={false}
+                visibleRows={16}
               />
               <WaitingList 
                 title="유치부 연습 대기" 
@@ -396,15 +407,8 @@ export default function MainClient({ rows, kinderRows, drumRows, classTimeSettin
                 studentCourseInfos={studentCourseInfos}
                 showDeleteButton={false}
                 showExpectedTime={false}
+                visibleRows={8}
               />
-              <button className="px-4 py-6 text-2xl font-bold text-white bg-orange-500 rounded-lg hover:bg-orange-600" onClick={onEntrance}>입실</button>
-              
-              <button 
-                className="px-4 py-6 text-2xl font-bold text-black bg-yellow-400 border-4 border-yellow-500 rounded-lg hover:bg-yellow-500 hover:border-yellow-600 transition-colors" 
-                onClick={onExit}
-              >
-                퇴실
-              </button>
               
               {/* 개발 모드 테스트 도구 - 필요시 수동으로 활성화 */}
               {/* {process.env.NODE_ENV === 'development' && <TestTools />} */}
@@ -585,7 +589,8 @@ function WaitingList({
   studentCourseInfos = [],
   onRemoveFromQueue,
   showDeleteButton = true,
-  showExpectedTime = true
+  showExpectedTime = true,
+  visibleRows = 4
 }: { 
   title: string; 
   waitingQueue: WaitingQueueRow[]; 
@@ -597,6 +602,7 @@ function WaitingList({
   onRemoveFromQueue?: (queueId: string, studentId: string) => void;
   showDeleteButton?: boolean;
   showExpectedTime?: boolean;
+  visibleRows?: number;
 }) {
   // 대기 시간 계산 (분 단위)
   const calculateWaitTime = (startTime: string): string => {
@@ -693,9 +699,8 @@ function WaitingList({
 
   const roomAssignments = calculateRoomAssignments();
 
-  // 표시할 행 수를 4개로 고정하고 스크롤 가능하게 설정
-  const visibleRows = 4;
-  // 대기열이 비어있어도 최소 4개 행은 표시하되, 대기열이 4개보다 많으면 모든 항목 표시
+  // 표시할 행 수를 visibleRows prop으로 제어 (기본값 4)
+  // 대기열이 비어있어도 최소 visibleRows 만큼은 표시하되, 대기열이 더 길면 모든 항목 표시 (스크롤)
   const maxItems = Math.max(visibleRows, waitingQueue.length);
 
   return (
@@ -715,10 +720,10 @@ function WaitingList({
         </div>
       </div>
       
-      {/* 스크롤 가능한 리스트 영역 - 4개 행 높이로 고정 */}
+      {/* 스크롤 가능한 리스트 영역 - visibleRows 행 높이로 고정 */}
       <div 
         className="bg-white border-x border-b border-gray-400 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100" 
-        style={{ height: `${visibleRows * 2.15}rem` }}
+        style={{ height: `${visibleRows * 1.15}rem` }}
       >
         <ul>
           {Array.from({ length: maxItems }, (_, index) => {
@@ -732,16 +737,16 @@ function WaitingList({
               const assignment = roomAssignments[assignmentIndex];
               
               return (
-                <li key={item.queue_id} className="flex items-center justify-between px-1 py-1 border-b border-gray-200 h-[2.15rem]">
+                <li key={item.queue_id} className="flex items-center justify-between px-1 border-b border-gray-200 h-[1.15rem]">
                   <div className="flex items-center flex-1">
                     {/* 강사 표시 (색상 원) */}
-                    <div className={`w-3 h-3 rounded-full mr-2 ${assignment ? assignment.instructorColor : 'bg-gray-300'}`}></div>
+                    <div className={`w-2.5 h-2.5 rounded-full mr-1 ${assignment ? assignment.instructorColor : 'bg-gray-300'}`}></div>
                     
                     {/* 수강생 이름 */}
-                    <span className="text-xs text-gray-900 mr-2 flex-1 truncate">{item.student_name}</span>
+                    <span className="text-xs text-gray-900 mr-1 flex-1 truncate leading-none">{item.student_name}</span>
                     
                     {/* 학원 도착 시간 */}
-                    <span className="text-xs text-gray-600 mr-1">
+                    <span className="text-xs text-gray-600 mr-1 leading-none">
                       {new Date(item.wait_start_time).toLocaleTimeString('ko-KR', { 
                         hour: 'numeric', 
                         minute: '2-digit',
@@ -750,17 +755,17 @@ function WaitingList({
                     </span>
                     
                     {/* 방 배정 및 예상 입실 시간 */}
-                    <span className="text-xs font-bold text-blue-600">
+                    <span className="text-xs font-bold text-blue-600 leading-none">
                       {(() => {
                         // 이론실에 있는 학생인지 확인 (queue_id가 theory_로 시작)
                         if (String(item.queue_id).startsWith('theory_')) {
                           // 이론실에 있는 학생도 다음 입실 예정 방을 표시
                           if (assignment) {
                             return (
-                              <div className="text-center">
-                                <div>{assignment.roomNo}번방</div>
+                              <div className="text-center flex items-center gap-1">
+                                <div>{assignment.roomNo}번</div>
                                 {showExpectedTime && (
-                                  <div className="text-xs text-gray-500">
+                                  <div className="text-[10px] text-gray-500">
                                     {assignment.expectedExitTime.toLocaleTimeString('ko-KR', { 
                                       hour: 'numeric', 
                                       minute: '2-digit',
@@ -777,10 +782,10 @@ function WaitingList({
                         // 일반 대기열 학생
                         if (assignment) {
                           return (
-                            <div className="text-center">
-                              <div>{assignment.roomNo}번방</div>
+                            <div className="text-center flex items-center gap-1">
+                              <div>{assignment.roomNo}번</div>
                               {showExpectedTime && (
-                                <div className="text-xs text-gray-500">
+                                <div className="text-[10px] text-gray-500">
                                   {assignment.expectedExitTime.toLocaleTimeString('ko-KR', { 
                                     hour: 'numeric', 
                                     minute: '2-digit',
@@ -804,7 +809,7 @@ function WaitingList({
                             onRemoveFromQueue(String(item.queue_id), item.student_id);
                           }
                         }}
-                        className="w-6 h-6 ml-1 text-xs bg-red-500 hover:bg-red-600 text-white rounded flex items-center justify-center"
+                        className="w-4 h-4 ml-1 text-[10px] bg-red-500 hover:bg-red-600 text-white rounded flex items-center justify-center"
                         title="대기열에서 삭제"
                       >
                         ×
@@ -816,22 +821,22 @@ function WaitingList({
             } else {
               // 빈 행 표시 (새로운 형식에 맞게)
               return (
-                <li key={`empty-${index}`} className="flex items-center px-1 py-1 border-b border-gray-200 h-[2.15rem]">
+                <li key={`empty-${index}`} className="flex items-center px-1 border-b border-gray-200 h-[1.15rem]">
                   <div className="flex items-center flex-1">
                     {/* 빈 강사 표시 */}
-                    <div className="w-3 h-3 rounded-full mr-2 bg-gray-200"></div>
+                    <div className="w-2.5 h-2.5 rounded-full mr-1 bg-gray-200"></div>
                     
                     {/* 빈 수강생 이름 */}
-                    <span className="text-xs text-gray-400 mr-2 flex-1">-</span>
+                    <span className="text-xs text-gray-400 mr-1 flex-1 leading-none">-</span>
                     
                     {/* 빈 도착 시간 */}
-                    <span className="text-xs text-gray-400 mr-2">-</span>
+                    <span className="text-xs text-gray-400 mr-1 leading-none">-</span>
                     
                     {/* 빈 방 배정 */}
-                    <span className="text-xs text-gray-400">-</span>
+                    <span className="text-xs text-gray-400 leading-none">-</span>
                     
                     {/* 빈 삭제 버튼 공간 */}
-                    {showDeleteButton && <div className="w-6 h-6 ml-1"></div>}
+                    {showDeleteButton && <div className="w-4 h-4 ml-1"></div>}
                   </div>
                 </li>
               );
