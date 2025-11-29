@@ -97,6 +97,83 @@ export async function processEntrance(studentId: string): Promise<string> {
     // 입실 시간 정규화 적용
     const normalizedInTime = normalizeInTime(now);
 
+    // === 수강 시간 초과 체크 (입실 전 확인) ===
+    const lessonNameMap: Record<number,string> = {1:'피아노+이론',2:'피아노+드럼',3:'드럼',4:'피아노',5:'연습만'};
+    const lessonName = lessonNameMap[lessonCode] || '수업';
+    const today = toKSTISOString(normalizedInTime).slice(0, 10); // YYYY-MM-DD
+    
+    try {
+      // 필수 수강 시간 조회
+      const classTimeSettings = await selectClassTimeSettings(sql);
+      let gradeName = '초등부';
+      if (student.student_grade) {
+        switch (Number(student.student_grade)) {
+          case 1: gradeName = '유치부'; break;
+          case 2: gradeName = '초등부'; break;
+          case 3: gradeName = '중고등부'; break;
+          case 4: gradeName = '대회부'; break;
+          case 5: gradeName = '연주회부'; break;
+          case 6: gradeName = '신입생'; break;
+          case 7: gradeName = '기타'; break;
+        }
+      }
+      
+      const setting = classTimeSettings.find(s => s.grade_name === gradeName);
+      let requiredTotalTime = 35; // 기본값
+      
+      if (setting) {
+        if (lessonCode === 1) { // 피아노+이론
+          requiredTotalTime = (setting.pt_piano || 0) + (setting.pt_theory || 0);
+        } else if (lessonCode === 2) { // 피아노+드럼
+          requiredTotalTime = (setting.pd_piano || 0) + (setting.pd_drum || 0);
+        } else if (lessonCode === 3) { // 드럼
+          requiredTotalTime = setting.drum_only || 35;
+        } else if (lessonCode === 4) { // 피아노
+          requiredTotalTime = setting.piano_only || 35;
+        } else if (lessonCode === 5) { // 연습만
+          requiredTotalTime = setting.practice_only || 50;
+        } else {
+          requiredTotalTime = setting.piano_only || 35;
+        }
+      }
+      
+      // 오늘 출석 기록 조회 및 합산
+      const attendanceSql = normalizePlaceholderForEnv(process.env.SELECT_ATTENDANCE_BY_DATE_SQL);
+      if (attendanceSql) {
+        const attendanceResult = await (sql as any).query(attendanceSql, [today]);
+        const allAttendance = Array.isArray(attendanceResult) ? attendanceResult : (attendanceResult?.rows || []);
+        const todayAttendance = allAttendance.filter((record: any) => record.student_id === studentId);
+        
+        // 완료된 세션들 (actual_out_time이 있는 것만)
+        const completedSessions = todayAttendance.filter((record: any) => 
+          record.actual_out_time !== null && record.actual_out_time !== undefined
+        );
+        
+        let totalAttendedMinutes = 0;
+        completedSessions.forEach((session: any) => {
+          if (session.in_time && session.actual_out_time) {
+            const sessionInTime = new Date(session.in_time);
+            const sessionOutTime = new Date(session.actual_out_time);
+            const duration = Math.floor((sessionOutTime.getTime() - sessionInTime.getTime()) / (1000 * 60));
+            if (duration >= 0) {
+              totalAttendedMinutes += duration;
+            }
+          }
+        });
+        
+        console.log(`입실 체크: ${student.student_name}, 총수강: ${totalAttendedMinutes}분 / 필수: ${requiredTotalTime}분`);
+        
+        // 이미 시간을 모두 채웠다면 입실 차단
+        if (totalAttendedMinutes >= requiredTotalTime) {
+          return `${student.student_name}님 (${lessonName})\n오늘 수업시간을 모두 채웠습니다!`;
+        }
+      }
+    } catch (error) {
+      console.error('수강 시간 초과 체크 중 오류:', error);
+      // 오류 시 입실 허용
+    }
+    // ========================================
+
     // 과정별 수업 시간 설정 조회하여 퇴실 시간 계산
     const calculateOutTime = async (): Promise<Date> => {
       try {
@@ -650,11 +727,11 @@ export async function processEntrance(studentId: string): Promise<string> {
     }
 
     // 5) 입실 타입 판단 및 메시지 구성
-    const lessonNameMap: Record<number,string> = {1:'피아노+이론',2:'피아노+드럼',3:'드럼',4:'피아노'};
-    const lessonName = lessonNameMap[lessonCode] || '수업';
+    // const lessonNameMap... (이미 상단에서 정의됨)
+    const lessonNameForMsg = lessonNameMap[lessonCode] || '수업';
     
     // 오늘 출석 기록 확인 (중도입실 판단)
-    const today = toKSTISOString(normalizedInTime).slice(0, 10); // YYYY-MM-DD
+    // const today... (이미 상단에서 정의됨)
     let todayAttendance: any[] = [];
     
     //console.log(`\n🔔 입실 메시지 생성: 날짜=${today}, 학생ID=${studentId}`);
@@ -713,12 +790,12 @@ export async function processEntrance(studentId: string): Promise<string> {
       
       // 중도입실 메시지
       const roomTypeKorean = roomType === 'theory' ? '이론실' : (isDrum ? '드럼실' : (isKindergarten ? '유치부실' : '연습실'));
-      return `진행된 연습시간 ${totalAttendedMinutes}분입니다. ${student.student_name}님 또 만나네요? 오늘의 학습은 "${lessonName}"입니다. (${roomTypeKorean} ${room.room_no}번)`;
+      return `진행된 연습시간 ${totalAttendedMinutes}분입니다. ${student.student_name}님 또 만나네요? 오늘의 학습은 "${lessonNameForMsg}"입니다. (${roomTypeKorean} ${room.room_no}번)`;
       
     } else {
       // 일반입실 - 오늘 첫 입실
       const roomTypeKorean = roomType === 'theory' ? '이론실' : (isDrum ? '드럼실' : (isKindergarten ? '유치부실' : '연습실'));
-      return `${student.student_name}님 반갑습니다.\n오늘의 학습은 "${lessonName}" 입니다. (${roomTypeKorean} ${room.room_no}번)`;
+      return `${student.student_name}님 반갑습니다.\n오늘의 학습은 "${lessonNameForMsg}" 입니다. (${roomTypeKorean} ${room.room_no}번)`;
     }
   } catch (e: any) {
     console.error('processEntrance error', e);
