@@ -100,106 +100,94 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // 5. 수강 시간 도달 여부 판단
+    // 5. 수강 시간 도달 여부 판단 (중도 퇴실 포함 총 수강 시간 계산)
     const inTime = new Date(currentRoom.in_time);
-    const expectedOutTime = new Date(currentRoom.out_time);
+    // const expectedOutTime = new Date(currentRoom.out_time); // 기존 예정 시간 대신 총량으로 비교
     
     const elapsedMinutes = Math.floor((now.getTime() - inTime.getTime()) / (1000 * 60));
-    const expectedMinutes = Math.floor((expectedOutTime.getTime() - inTime.getTime()) / (1000 * 60));
     
-    if (elapsedMinutes >= expectedMinutes) {
-      // 현재 방의 수강 시간은 충족됨
+    // 오늘 출석 기록 조회하여 총 수강 시간 계산
+    let totalAttendedMinutes = 0;
+    const kstOffset = 9 * 60 * 60 * 1000;
+    const kstTime = new Date(now.getTime() + kstOffset);
+    const today = kstTime.toISOString().slice(0, 10);
+    
+    const attendanceSqlRaw = process.env.SELECT_ATTENDANCE_BY_DATE_SQL;
+    const attendanceSql = normalizePlaceholders(attendanceSqlRaw);
+    
+    if (attendanceSql) {
+      const attendanceResult: any = await sql.query(attendanceSql, [today]);
+      const allAttendance = Array.isArray(attendanceResult) ? attendanceResult : (attendanceResult?.rows || []);
+      const todayAttendance = allAttendance.filter((record: any) => record.student_id === studentId);
       
-      // 6. "피아노+이론" 학생인 경우, 이론 시간 체크
-      if (lessonCode === 1 && (currentRoom.roomType === 'practice' || currentRoom.roomType === 'kinder')) {
-        // 피아노+이론 과정이고, 연습실/유치부실에서 퇴실하려는 경우
-        console.log('🎹📚 피아노+이론 학생 - 이론 시간 체크');
-        
-        // 오늘 출석 기록 조회
-        const kstOffset = 9 * 60 * 60 * 1000;
-        const kstTime = new Date(now.getTime() + kstOffset);
-        const today = kstTime.toISOString().slice(0, 10);
-        
-        const attendanceSqlRaw = process.env.SELECT_ATTENDANCE_BY_DATE_SQL;
-        const attendanceSql = normalizePlaceholders(attendanceSqlRaw);
-        
-        if (attendanceSql) {
-          const attendanceResult: any = await sql.query(attendanceSql, [today]);
-          const allAttendance = Array.isArray(attendanceResult) ? attendanceResult : (attendanceResult?.rows || []);
-          const todayAttendance = allAttendance.filter((record: any) => record.student_id === studentId);
-          
-          // 완료된 세션들 (actual_out_time이 있는 것만)
-          const completedSessions = todayAttendance.filter((record: any) => 
-            record.actual_out_time !== null && record.actual_out_time !== undefined
-          );
-          
-          // 총 수강 시간 계산
-          let totalAttendedMinutes = 0;
-          completedSessions.forEach((session: any) => {
-            if (session.in_time && session.actual_out_time) {
-              const sessionInTime = new Date(session.in_time);
-              const sessionOutTime = new Date(session.actual_out_time);
-              const duration = Math.floor((sessionOutTime.getTime() - sessionInTime.getTime()) / (1000 * 60));
-              if (duration >= 0) {
-                totalAttendedMinutes += duration;
-              }
-            }
-          });
-          
-          // 현재 세션 시간 추가 (아직 actual_out_time이 없으므로)
-          totalAttendedMinutes += elapsedMinutes;
-          
-          // 학년별 필수 시간 조회
-          const classTimeSettingsSqlRaw = process.env.SELECT_CLASS_TIME_SETTINGS_SQL;
-          const classTimeSettingsSql = normalizePlaceholders(classTimeSettingsSqlRaw);
-          
-          if (classTimeSettingsSql) {
-            const settingsResult: any = await sql.query(classTimeSettingsSql, []);
-            const classTimeSettings = Array.isArray(settingsResult) ? settingsResult : (settingsResult?.rows || []);
-            
-            let gradeName = '초등부';
-            if (studentInfo.student_grade) {
-              switch (Number(studentInfo.student_grade)) {
-                case 1: gradeName = '유치부'; break;
-                case 2: gradeName = '초등부'; break;
-                case 3: gradeName = '중고등부'; break;
-                case 4: gradeName = '대회부'; break;
-                case 5: gradeName = '연주회부'; break;
-                case 6: gradeName = '신입생'; break;
-                case 7: gradeName = '기타'; break;
-              }
-            }
-            
-            const setting = classTimeSettings.find((s: any) => s.grade_name === gradeName);
-            const requiredPianoTime = setting?.pt_piano || 25;
-            const requiredTheoryTime = setting?.pt_theory || 25;
-            const requiredTotalTime = requiredPianoTime + requiredTheoryTime;
-            
-            console.log(`📊 총 수강: ${totalAttendedMinutes}분 / 필수: ${requiredTotalTime}분 (피아노: ${requiredPianoTime}분, 이론: ${requiredTheoryTime}분)`);
-            
-            if (totalAttendedMinutes < requiredTotalTime) {
-              const remainingMinutes = requiredTotalTime - totalAttendedMinutes;
-              return NextResponse.json({
-                status: 'time_insufficient',
-                message: 'X',
-                remainingMinutes,
-                roomInfo: {
-                  roomType: currentRoom.roomType,
-                  roomNo: currentRoom.room_no,
-                  studentName: currentRoom.student_name,
-                  inTime: currentRoom.in_time,
-                  expectedOutTime: currentRoom.out_time,
-                  elapsedMinutes,
-                  expectedMinutes,
-                  totalAttendedMinutes,
-                  requiredTotalTime
-                }
-              });
-            }
+      // 완료된 세션들 (actual_out_time이 있는 것만)
+      const completedSessions = todayAttendance.filter((record: any) => 
+        record.actual_out_time !== null && record.actual_out_time !== undefined
+      );
+      
+      completedSessions.forEach((session: any) => {
+        if (session.in_time && session.actual_out_time) {
+          const sessionInTime = new Date(session.in_time);
+          const sessionOutTime = new Date(session.actual_out_time);
+          const duration = Math.floor((sessionOutTime.getTime() - sessionInTime.getTime()) / (1000 * 60));
+          if (duration >= 0) {
+            totalAttendedMinutes += duration;
           }
         }
+      });
+    }
+    
+    // 현재 세션 시간 추가
+    totalAttendedMinutes += elapsedMinutes;
+    
+    // 학년별 필수 시간 조회 및 비교
+    let requiredTotalTime = 35; // 기본값
+    let gradeName = '초등부';
+    
+    if (studentInfo && studentInfo.student_grade) {
+      switch (Number(studentInfo.student_grade)) {
+        case 1: gradeName = '유치부'; break;
+        case 2: gradeName = '초등부'; break;
+        case 3: gradeName = '중고등부'; break;
+        case 4: gradeName = '대회부'; break;
+        case 5: gradeName = '연주회부'; break;
+        case 6: gradeName = '신입생'; break;
+        case 7: gradeName = '기타'; break;
       }
+    }
+    
+    const classTimeSettingsSqlRaw = process.env.SELECT_CLASS_TIME_SETTINGS_SQL;
+    const classTimeSettingsSql = normalizePlaceholders(classTimeSettingsSqlRaw);
+    
+    if (classTimeSettingsSql) {
+      const settingsResult: any = await sql.query(classTimeSettingsSql, []);
+      const classTimeSettings = Array.isArray(settingsResult) ? settingsResult : (settingsResult?.rows || []);
+      const setting = classTimeSettings.find((s: any) => s.grade_name === gradeName);
       
+      if (setting) {
+        if (lessonCode === 1) { // 피아노+이론
+          // 퇴실 버튼은 '완전 하원'을 의미한다고 가정하면 전체 시간 비교
+          // 하지만 연습실에서 퇴실하는 거라면 피아노 시간만 체크해야 할 수도 있음
+          // 여기서는 안전하게 전체 시간 체크 (이론 포함)
+          // 만약 피아노만 체크해야 한다면 requiredPianoTime 사용
+          requiredTotalTime = (setting.pt_piano || 0) + (setting.pt_theory || 0);
+        } else if (lessonCode === 2) { // 피아노+드럼
+          requiredTotalTime = (setting.pd_piano || 0) + (setting.pd_drum || 0);
+        } else if (lessonCode === 3) { // 드럼
+          requiredTotalTime = setting.drum_only || 35;
+        } else if (lessonCode === 4) { // 피아노
+          requiredTotalTime = setting.piano_only || 35;
+        } else if (lessonCode === 5) { // 연습만
+          requiredTotalTime = setting.practice_only || 50;
+        } else {
+          requiredTotalTime = setting.piano_only || 35;
+        }
+      }
+    }
+    
+    console.log(`📊 총 수강: ${totalAttendedMinutes}분 / 필수: ${requiredTotalTime}분 (과정: ${lessonCode})`);
+    
+    if (totalAttendedMinutes >= requiredTotalTime) {
       // 수강 시간 충족 - 퇴실 가능
       return NextResponse.json({
         status: 'can_exit',
@@ -209,17 +197,13 @@ export async function POST(request: NextRequest) {
           roomNo: currentRoom.room_no,
           studentName: currentRoom.student_name,
           inTime: currentRoom.in_time,
-          expectedOutTime: currentRoom.out_time,
           elapsedMinutes,
-          expectedMinutes
+          totalAttendedMinutes
         }
       });
     } else {
       // 수강 시간 부족 - 퇴실 불가
-      const remainingMinutes = expectedMinutes - elapsedMinutes;
-      const roomTypeKorean = currentRoom.roomType === 'practice' ? '연습실' : 
-                           currentRoom.roomType === 'kinder' ? '유치부실' : '드럼실';
-      
+      const remainingMinutes = requiredTotalTime - totalAttendedMinutes;
       return NextResponse.json({
         status: 'time_insufficient',
         message: 'X',
@@ -229,12 +213,16 @@ export async function POST(request: NextRequest) {
           roomNo: currentRoom.room_no,
           studentName: currentRoom.student_name,
           inTime: currentRoom.in_time,
-          expectedOutTime: currentRoom.out_time,
           elapsedMinutes,
-          expectedMinutes
+          totalAttendedMinutes
         }
       });
     }
+
+    /* 기존 로직 주석 처리 또는 제거
+    if (elapsedMinutes >= expectedMinutes) {
+      // ...
+    */
 
   } catch (error) {
     console.error('퇴실 가능 여부 확인 오류:', error);
