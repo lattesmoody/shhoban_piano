@@ -105,7 +105,7 @@ export default function MyPageClient({ studentsData, members }: Props) {
   };
   
   // 상태에 따른 색상 클래스 반환 (피아노+드럼용)
-  const getStatusColorClass = (status: number, courseName: string): string => {
+  const getStatusColorClass = (status: number, courseName: string, remark: string | null): string => {
     const isPianoDrum = courseName && (
       courseName.includes('피아노') && courseName.includes('드럼')
     );
@@ -115,14 +115,13 @@ export default function MyPageClient({ studentsData, members }: Props) {
       return courseName?.includes('드럼') ? styles.drumClickable : '';
     }
     
-    // 피아노+드럼: 2,3단계는 파란색 (드럼), 4,5단계는 검은색 (피아노)
-    if (status === 2 || status === 3) {
-      return styles.pianoDrumBlue; // 파란색 - 드럼 연주 중
-    } else if (status === 4 || status === 5) {
-      return styles.pianoDrumBlack; // 검은색 - 피아노 연주 중
+    // 피아노+드럼: 
+    // 드럼실에 있으면 파란색, 그 외(피아노 연습실)는 검은색
+    if (remark && remark.includes('드럼')) {
+      return styles.pianoDrumBlue; // 파란색 - 드럼실
+    } else {
+      return styles.pianoDrumBlack; // 검은색 - 피아노실
     }
-    
-    return '';
   };
   
   // 차량 상태 아이콘 반환 (SVG)
@@ -263,8 +262,11 @@ export default function MyPageClient({ studentsData, members }: Props) {
     }
   };
   
-  // 비고에서 방 번호 추출 및 연습번호 변환 (T, D, 숫자)
-  const extractRoomNumber = (remark: string | null): string => {
+  // 비고에서 방 번호 추출 및 연습번호 변환 (T, D, 숫자, 퇴실시 빈칸)
+  const extractRoomNumber = (remark: string | null, actualOutTime: string | null): string => {
+    // 중간퇴실(이미 퇴실한 상태)이면 빈칸
+    if (actualOutTime) return '';
+
     if (!remark) return '-';
     if (remark.includes('이론')) return 'T';
     if (remark.includes('드럼')) return 'D';
@@ -378,7 +380,7 @@ export default function MyPageClient({ studentsData, members }: Props) {
                     const latestSession = student.sessions[student.sessions.length - 1];
                     const isDrum = latestSession?.course_name?.includes('드럼');
                     const isReEntry = student.sessions.length > 1; // 재입실 여부 (세션이 2개 이상)
-                    const roomNumber = extractRoomNumber(latestSession?.remark);
+                    const roomNumber = extractRoomNumber(latestSession?.remark, latestSession?.actual_out_time);
                     const isTheoryRoom = roomNumber === 'T';
                       
                       // 피아노, 피아노+이론, 드럼, 피아노+드럼 모두 클릭 가능
@@ -399,7 +401,7 @@ export default function MyPageClient({ studentsData, members }: Props) {
                           
                           {/* 연습종료 - 클릭 가능 (이론실이면 빈칸) */}
                           <td 
-                            className={getStatusColorClass(latestSession.exit_minute_status, latestSession?.course_name || '')}
+                            className={getStatusColorClass(latestSession.exit_minute_status, latestSession?.course_name || '', latestSession?.remark)}
                             onClick={() => isClickable && !isTheoryRoom && handleDrumStatusClick(
                               latestSession.attendance_num,
                               'exit_minute',
@@ -413,7 +415,7 @@ export default function MyPageClient({ studentsData, members }: Props) {
                           
                           {/* 원장 - 클릭 가능, 상태에 따른 아이콘 */}
                           <td 
-                            className={getStatusColorClass(latestSession.director_status, latestSession?.course_name || '')}
+                            className={getStatusColorClass(latestSession.director_status, latestSession?.course_name || '', latestSession?.remark)}
                             onClick={() => isClickable && handleDrumStatusClick(
                               latestSession.attendance_num,
                               'director',
@@ -427,7 +429,7 @@ export default function MyPageClient({ studentsData, members }: Props) {
                           
                           {/* 강사 - 클릭 가능, 상태에 따른 아이콘 */}
                           <td 
-                            className={getStatusColorClass(latestSession.teacher_status, latestSession?.course_name || '')}
+                            className={getStatusColorClass(latestSession.teacher_status, latestSession?.course_name || '', latestSession?.remark)}
                             onClick={() => isClickable && handleDrumStatusClick(
                               latestSession.attendance_num,
                               'teacher',
@@ -438,10 +440,10 @@ export default function MyPageClient({ studentsData, members }: Props) {
                           >
                             {isClickable ? getStatusIcon(latestSession.teacher_status, memberId, 'teacher') : getMemberIcon(memberId)}
                           </td>
-
+                          
                           {/* 이론 - 클릭 가능, 원장 칸과 동일하게 작동 */}
                           <td 
-                            className={getStatusColorClass(latestSession.theory_status, latestSession?.course_name || '')}
+                            className={getStatusColorClass(latestSession.theory_status, latestSession?.course_name || '', latestSession?.remark)}
                             onClick={() => isClickable && handleDrumStatusClick(
                               latestSession.attendance_num,
                               'theory',
