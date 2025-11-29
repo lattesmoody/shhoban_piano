@@ -861,49 +861,68 @@ async function onEntrance() {
   }
 }
 
-async function onExit() {
-  try {
-    const studentId = window.prompt('퇴실할 수강생 고유번호를 입력하세요!')?.trim();
-    if (!studentId) return;
-    
-    // 퇴실 가능 여부 확인
-    const checkRes = await fetch('/api/check-exit-eligibility', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ studentId })
-    });
-    
-    if (!checkRes.ok) {
-      alert('퇴실 가능 여부 확인 중 오류가 발생했습니다.');
-      return;
+  async function onExit() {
+    try {
+      const studentId = window.prompt('퇴실할 수강생 고유번호를 입력하세요!')?.trim();
+      if (!studentId) return;
+      
+      // 퇴실 가능 여부 확인
+      const checkRes = await fetch('/api/check-exit-eligibility', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId })
+      });
+      
+      if (!checkRes.ok) {
+        // 404 등 에러 처리
+        const errorText = await checkRes.text();
+        alert(errorText || '퇴실 가능 여부 확인 중 오류가 발생했습니다.');
+        return;
+      }
+      
+      const checkData = await checkRes.json();
+      
+      // 상태에 따른 알림창 표시
+      switch (checkData.status) {
+        case 'not_entered':
+          alert('입실 상태가 아닙니다.');
+          break;
+          
+        case 'time_insufficient':
+          alert('X');
+          break;
+          
+        case 'can_exit':
+          alert('O');
+          
+          // 퇴실 처리 진행
+          const exitRes = await fetch('/api/process-exit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ studentId })
+          });
+          
+          const exitText = await exitRes.text();
+          if (exitRes.ok) {
+            // 퇴실 성공 메시지는 사용자 요구사항에 명시되지 않았으나, 
+            // 확인 차원에서 보여주거나 생략 가능. 여기서는 보여줌.
+            alert(exitText);
+            location.reload();
+          } else {
+            alert('퇴실 처리 실패: ' + exitText);
+          }
+          break;
+          
+        default:
+          alert('알 수 없는 상태입니다.');
+          break;
+      }
+      
+    } catch (e) {
+      console.error('퇴실 처리 오류:', e);
+      alert('퇴실 처리 중 오류가 발생했습니다.');
     }
-    
-    const checkData = await checkRes.json();
-    
-    // 상태에 따른 알림창 표시
-    switch (checkData.status) {
-      case 'not_entered':
-        alert('입실 상태가 아닙니다.');
-        break;
-        
-      case 'time_insufficient':
-        alert(checkData.message); // "X분 남음"
-        break;
-        
-      case 'can_exit':
-        alert(checkData.message); // "O"
-        break;
-        
-      default:
-        alert('알 수 없는 상태입니다.');
-        break;
-    }
-    
-  } catch (e) {
-    console.error('퇴실 처리 오류:', e);
-    alert('퇴실 처리 중 오류가 발생했습니다.');
   }
-}
 
 
 

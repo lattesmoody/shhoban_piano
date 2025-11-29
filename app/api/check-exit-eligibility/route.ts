@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
               const remainingMinutes = requiredTotalTime - totalAttendedMinutes;
               return NextResponse.json({
                 status: 'time_insufficient',
-                message: `이론 ${remainingMinutes}분 남았습니다.`,
+                message: 'X',
                 remainingMinutes,
                 roomInfo: {
                   roomType: currentRoom.roomType,
@@ -222,7 +222,7 @@ export async function POST(request: NextRequest) {
       
       return NextResponse.json({
         status: 'time_insufficient',
-        message: `${roomTypeKorean} ${currentRoom.room_no}번 / ${remainingMinutes}분 남음`,
+        message: 'X',
         remainingMinutes,
         roomInfo: {
           roomType: currentRoom.roomType,

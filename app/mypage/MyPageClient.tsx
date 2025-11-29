@@ -275,12 +275,12 @@ export default function MyPageClient({ studentsData, members }: Props) {
     return '●';
   };
   
-  // 퇴실 시간 계산 (actual_out_time 우선, 없으면 out_time)
+  // 퇴실 시간 계산 (actual_out_time 우선, 없으면 빈 칸)
   const getExitTime = (session: Session): string => {
     if (session.actual_out_time) {
       return formatTime(session.actual_out_time);
     }
-    return formatTime(session.out_time);
+    return '';
   };
   
   // 현재 입실 중인지 확인
@@ -353,11 +353,11 @@ export default function MyPageClient({ studentsData, members }: Props) {
                   <tr>
                     <th>연습<br/>번호</th>
                     <th>이름</th>
-                    <th>입실<br/>시간</th>
+                    <th>등원<br/>시간</th>
                     <th>연습<br/>종료</th>
                     <th>원장</th>
                       <th>{memberName}</th>
-                    <th>퇴실<br/>시간</th>
+                    <th>하원<br/>시간</th>
                     <th>차량</th>
                     <th>비고</th>
                   </tr>
