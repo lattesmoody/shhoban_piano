@@ -47,7 +47,15 @@ async function getMyPageData() {
     const allMembers: MemberInfo[] = Array.isArray(membersResult) ? membersResult : (membersResult?.rows || []);
     
     // 오늘의 모든 출석 기록 조회
-    const attendanceSql = normalizePlaceholder(process.env.SELECT_ATTENDANCE_BY_DATE_SQL);
+    // const attendanceSql = normalizePlaceholder(process.env.SELECT_ATTENDANCE_BY_DATE_SQL);
+    // theory_status 컬럼을 확실히 가져오기 위해 쿼리를 직접 정의 (환경변수 대신 사용)
+    const attendanceSql = `
+      SELECT *
+      FROM student_attendance
+      WHERE to_char(in_time, 'YYYY-MM-DD') = $1
+      ORDER BY in_time ASC
+    `;
+    
     if (!attendanceSql) {
       throw new Error('SELECT_ATTENDANCE_BY_DATE_SQL 환경변수가 설정되지 않았습니다.');
     }
@@ -102,6 +110,7 @@ async function getMyPageData() {
         remark: record.remark,
         exit_minute_status: record.exit_minute_status || 1,
         director_status: record.director_status || 1,
+        theory_status: record.theory_status || 1,
         teacher_status: record.teacher_status || 1,
         vehicle_status: record.vehicle_status || 1, // 추가
       });

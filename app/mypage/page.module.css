@@ -73,10 +73,39 @@
   padding: 1rem;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  height: calc(100vh - 120px); /* 화면 높이에 맞춤 */
+  overflow: hidden;
 }
 
 .column {
   overflow-x: auto;
+  overflow-y: scroll; /* 항상 스크롤바 영역 표시 */
+  height: 100%;
+  padding-right: 5px; /* 스크롤바와 내용 간격 */
+  
+  /* Firefox 스크롤바 */
+  scrollbar-width: thin;
+  scrollbar-color: #9ca3af #e5e7eb;
+}
+
+/* Webkit (Chrome, Safari, Edge) 스크롤바 커스텀 */
+.column::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.column::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.column::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 4px;
+}
+
+.column::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }
 
 .table {
@@ -181,33 +210,15 @@
   background-color: #e8f5e9; /* 연한 녹색 */
 }
 
-/* 반응형 */
-@media (max-width: 1400px) {
-  .tableContainer {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.reEnter {
+  color: red !important;
+  font-weight: bold;
 }
 
-@media (max-width: 900px) {
-  .tableContainer {
-    grid-template-columns: 1fr;
-  }
+.vehicleIcon {
+  width: 24px;
+  height: 24px;
+  vertical-align: middle;
 }
 
-@media (max-width: 768px) {
-  .header {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .table {
-    font-size: 0.75rem;
-  }
-  
-  .table th,
-  .table td {
-    padding: 0.3rem 0.2rem;
-    font-size: 0.7rem;
-  }
-}
 

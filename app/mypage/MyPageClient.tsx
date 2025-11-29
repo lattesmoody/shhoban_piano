@@ -14,6 +14,7 @@ type Session = {
   remark: string;
   exit_minute_status: number;  // 1, 2, 3
   director_status: number;      // 1, 2, 3
+  theory_status: number;        // 1, 2, 3
   teacher_status: number;       // 1, 2, 3
   vehicle_status: number;       // 1=탑승 대기, 2=탑승 완료
 };
@@ -47,7 +48,7 @@ export default function MyPageClient({ studentsData, members }: Props) {
   // 드럼 상태 업데이트 핸들러
   const handleDrumStatusClick = async (
     attendance_num: number,
-    field: 'exit_minute' | 'director' | 'teacher' | 'vehicle',
+    field: 'exit_minute' | 'director' | 'theory' | 'teacher' | 'vehicle',
     current_status: number,
     course_name: string
   ) => {
@@ -79,11 +80,11 @@ export default function MyPageClient({ studentsData, members }: Props) {
   };
   
   // 상태에 따른 아이콘 반환 (피아노+드럼 5단계 지원)
-  const getStatusIcon = (status: number, memberId: string, type: 'director' | 'teacher'): string => {
+  const getStatusIcon = (status: number, memberId: string, type: 'director' | 'teacher' | 'theory'): string => {
     if (status === 1) return '-';
     
-    if (type === 'director') {
-      // 원장 컬럼: ○ → ● → ○ → ●
+    if (type === 'director' || type === 'theory') {
+      // 원장/이론 컬럼: ○ → ● → ○ → ●
       if (status === 2 || status === 4) return '○';
       return '●'; // status 3 or 5
     }
@@ -92,7 +93,7 @@ export default function MyPageClient({ studentsData, members }: Props) {
     if (status === 2 || status === 4) {
       // 빈 아이콘
       switch (memberId) {
-        case 'hm01': return 'ㅁ'; // 정영롱
+        case 'hm01': return '□'; // 정영롱
         case 'hm02': return '☆'; // 전상은
         case 'hm03': return '○'; // 강시1
         default: return '□';
@@ -124,11 +125,16 @@ export default function MyPageClient({ studentsData, members }: Props) {
     return '';
   };
   
-  // 차량 상태 텍스트 반환
-  const getVehicleStatusText = (status: number): string => {
-    if (status === 1) return '탑승 대기';
-    if (status === 2) return '탑승 완료';
-    return '';
+  // 차량 상태 아이콘 반환 (SVG)
+  const getVehicleIcon = (status: number): React.ReactNode => {
+    // 1=탑승 대기(노란색), 2=탑승 완료(회색)
+    const fillColor = status === 1 ? '#FFD700' : status === 2 ? '#808080' : '#CCCCCC';
+    
+    return (
+      <svg className={styles.vehicleIcon} viewBox="0 0 24 24" fill={fillColor} xmlns="http://www.w3.org/2000/svg">
+        <path d="M18 11V6C18 4.34 16.66 3 15 3H9C7.34 3 6 4.34 6 6V11H5C4.45 11 4 11.45 4 12V15C4 15.55 4.45 16 5 16H6V19C6 19.55 6.45 20 7 20H8C8.55 20 9 19.55 9 19V16H15V19C15 19.55 15.45 20 16 20H17C17.55 20 18 19.55 18 19V16H19C19.55 16 20 15.55 20 15V12C20 11.45 19.55 11 19 11H18ZM8 6C8 5.45 8.45 5 9 5H15C15.55 5 16 5.45 16 6V9H8V6ZM7.5 14C6.67 14 6 13.33 6 12.5C6 11.67 6.67 11 7.5 11C8.33 11 9 11.67 9 12.5C9 13.33 8.33 14 7.5 14ZM16.5 14C15.67 14 15 13.33 15 12.5C15 11.67 15.67 11 16.5 11C17.33 11 18 11.67 18 12.5C18 13.33 17.33 14 16.5 14Z" />
+      </svg>
+    );
   };
   
   // DB에서 가져온 강사 정보로 매핑 생성 (원장, 관리자 제외)
@@ -159,12 +165,12 @@ export default function MyPageClient({ studentsData, members }: Props) {
     return () => clearInterval(timer);
   }, []);
   
-  // 30초마다 자동 새로고침
+  // 1분마다 자동 새로고침
   useEffect(() => {
     const refreshInterval = setInterval(() => {
-      //console.log('🔄 자동 새로고침 (30초)');
+      //console.log('🔄 자동 새로고침 (1분)');
       router.refresh();
-    }, 30000);
+    }, 60000);
     
     return () => clearInterval(refreshInterval);
   }, [router]);
@@ -257,9 +263,12 @@ export default function MyPageClient({ studentsData, members }: Props) {
     }
   };
   
-  // 비고에서 방 번호 추출
+  // 비고에서 방 번호 추출 및 연습번호 변환 (T, D, 숫자)
   const extractRoomNumber = (remark: string | null): string => {
     if (!remark) return '-';
+    if (remark.includes('이론')) return 'T';
+    if (remark.includes('드럼')) return 'D';
+    
     // 숫자만 추출
     const match = remark.match(/\d+/);
     return match ? match[0] : '-';
@@ -356,7 +365,8 @@ export default function MyPageClient({ studentsData, members }: Props) {
                     <th>등원<br/>시간</th>
                     <th>연습<br/>종료</th>
                     <th>원장</th>
-                      <th>{memberName}</th>
+                    <th>{memberName}</th>
+                    <th>이론</th>
                     <th>하원<br/>시간</th>
                     <th>차량</th>
                     <th>비고</th>
@@ -366,7 +376,10 @@ export default function MyPageClient({ studentsData, members }: Props) {
                   {columnData.map((student) => {
                     const isActive = hasActiveSession(student.sessions);
                     const latestSession = student.sessions[student.sessions.length - 1];
-                      const isDrum = latestSession?.course_name?.includes('드럼');
+                    const isDrum = latestSession?.course_name?.includes('드럼');
+                    const isReEntry = student.sessions.length > 1; // 재입실 여부 (세션이 2개 이상)
+                    const roomNumber = extractRoomNumber(latestSession?.remark);
+                    const isTheoryRoom = roomNumber === 'T';
                       
                       // 피아노, 피아노+이론, 드럼, 피아노+드럼 모두 클릭 가능
                       const isClickable = latestSession?.course_name && (
@@ -378,24 +391,24 @@ export default function MyPageClient({ studentsData, members }: Props) {
                       <tr 
                         key={student.student_id}
                       >
-                          <td>{extractRoomNumber(latestSession?.remark)}</td>
+                          <td>{roomNumber}</td>
                         <td className={styles.nameCell}>
                             {student.student_name}
                         </td>
-                        <td>{formatTime(latestSession?.in_time)}</td>
+                        <td className={isReEntry ? styles.reEnter : ''}>{formatTime(latestSession?.in_time)}</td>
                           
-                          {/* 연습종료 - 클릭 가능 */}
+                          {/* 연습종료 - 클릭 가능 (이론실이면 빈칸) */}
                           <td 
                             className={getStatusColorClass(latestSession.exit_minute_status, latestSession?.course_name || '')}
-                            onClick={() => isClickable && handleDrumStatusClick(
+                            onClick={() => isClickable && !isTheoryRoom && handleDrumStatusClick(
                               latestSession.attendance_num,
                               'exit_minute',
                               latestSession.exit_minute_status,
                               latestSession.course_name
                             )}
-                            style={{ cursor: isClickable ? 'pointer' : 'default' }}
+                            style={{ cursor: (isClickable && !isTheoryRoom) ? 'pointer' : 'default' }}
                           >
-                            {formatNormalizedMinutes(latestSession?.out_time)}
+                            {isTheoryRoom ? '' : formatNormalizedMinutes(latestSession?.out_time)}
                           </td>
                           
                           {/* 원장 - 클릭 가능, 상태에 따른 아이콘 */}
@@ -425,6 +438,20 @@ export default function MyPageClient({ studentsData, members }: Props) {
                           >
                             {isClickable ? getStatusIcon(latestSession.teacher_status, memberId, 'teacher') : getMemberIcon(memberId)}
                           </td>
+
+                          {/* 이론 - 클릭 가능, 원장 칸과 동일하게 작동 */}
+                          <td 
+                            className={getStatusColorClass(latestSession.theory_status, latestSession?.course_name || '')}
+                            onClick={() => isClickable && handleDrumStatusClick(
+                              latestSession.attendance_num,
+                              'theory',
+                              latestSession.theory_status,
+                              latestSession.course_name
+                            )}
+                            style={{ cursor: isClickable ? 'pointer' : 'default' }}
+                          >
+                            {isClickable ? getStatusIcon(latestSession.theory_status, memberId, 'theory') : '●'}
+                          </td>
                           
                           <td>{getExitTime(latestSession)}</td>
                           
@@ -439,7 +466,7 @@ export default function MyPageClient({ studentsData, members }: Props) {
                             )}
                             style={{ cursor: student.vehicle_yn ? 'pointer' : 'default' }}
                           >
-                            {student.vehicle_yn ? getVehicleStatusText(latestSession.vehicle_status) : ''}
+                            {student.vehicle_yn ? getVehicleIcon(latestSession.vehicle_status) : ''}
                           </td>
                           
                           <td className={styles.remarkCell}>

@@ -15,12 +15,15 @@ function normalizePlaceholders(raw: string | undefined): string {
 
 // KST 시간을 ISO 문자열로 변환 (UTC 변환 없이)
 function toKSTISOString(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
+  // UTC 시간에 9시간(KST 오프셋)을 더함
+  const kstDate = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+  
+  const year = kstDate.getUTCFullYear();
+  const month = String(kstDate.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(kstDate.getUTCDate()).padStart(2, '0');
+  const hours = String(kstDate.getUTCHours()).padStart(2, '0');
+  const minutes = String(kstDate.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(kstDate.getUTCSeconds()).padStart(2, '0');
   
   return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+09:00`;
 }

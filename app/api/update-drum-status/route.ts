@@ -21,10 +21,12 @@ export async function POST(request: Request) {
       );
     }
     
-    // vehicle은 2단계, 피아노+드럼은 5단계, 그 외는 3단계
+    // vehicle은 2단계, theory는 3단계, 피아노+드럼은 5단계, 그 외는 3단계
     let maxStatus;
     if (field === 'vehicle') {
       maxStatus = 2; // 차량: 1(탑승 대기) → 2(탑승 완료)
+    } else if (field === 'theory') {
+      maxStatus = 3; // 이론: 1(-) → 2(○) → 3(●)
     } else {
       const isPianoDrum = course_name && (
         course_name.includes('피아노') && course_name.includes('드럼')
@@ -45,6 +47,9 @@ export async function POST(request: Request) {
         break;
       case 'director':
         updateSql = 'UPDATE student_attendance SET director_status = $1 WHERE attendance_num = $2';
+        break;
+      case 'theory':
+        updateSql = 'UPDATE student_attendance SET theory_status = $1 WHERE attendance_num = $2';
         break;
       case 'teacher':
         updateSql = 'UPDATE student_attendance SET teacher_status = $1 WHERE attendance_num = $2';
