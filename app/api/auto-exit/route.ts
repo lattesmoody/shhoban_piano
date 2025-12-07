@@ -44,7 +44,7 @@ async function handleAutoExit() {
           const outTime = new Date(room.out_time);
           if (now >= outTime) {
             // 시간 만료 처리 (이동 로직 포함)
-            const moved = await handleTimeExpired(sql, room.student_id, room.room_no, 'practice');
+            const moved = await handleTimeExpired(sql, room.student_id, room.room_no, 'practice', room.in_time);
             if (moved) movedCount++;
           }
         }
@@ -62,7 +62,7 @@ async function handleAutoExit() {
           const outTime = new Date(room.out_time);
           if (now >= outTime) {
             // 시간 만료 처리 (이동 로직 포함)
-            const moved = await handleTimeExpired(sql, room.student_id, room.room_no, 'kinder');
+            const moved = await handleTimeExpired(sql, room.student_id, room.room_no, 'kinder', room.in_time);
             if (moved) movedCount++;
           }
         }
@@ -87,14 +87,29 @@ async function handleTimeExpired(
   sql: any, 
   studentId: string, 
   roomNo: number, 
-  roomType: 'practice' | 'kinder'
+  roomType: 'practice' | 'kinder',
+  inTimeStr?: string // 입실 시간 추가
 ): Promise<boolean> {
   try {
     // 1. 학생 과정 정보 조회
-    const now = new Date();
-    // KST 기준으로 요일 계산 (UTC + 9시간)
-    const kstDate = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-    const dayCode = ((kstDate.getDay() + 6) % 7) + 1; // 월=1..일=7
+    // 입실 시간이 있으면 입실 시간 기준으로 요일 계산 (정확도 향상)
+    // 없으면 현재 시간(KST) 기준
+    let targetDate: Date;
+    if (inTimeStr) {
+      // DB에 저장된 시간(UTC)을 KST로 변환
+      // 만약 이미 KST로 저장되어 있다면(수정 후) 그대로 사용? 
+      // toKSTISOString 함수는 UTC+9를 수행함.
+      // DB timestamp는 보통 UTC로 저장됨.
+      // inTimeStr이 ISO string이라면 new Date()는 로컬 시간(UTC)으로 파싱함.
+      // 여기에 9시간을 더하면 KST 시간이 됨.
+      const inTime = new Date(inTimeStr);
+      targetDate = new Date(inTime.getTime() + 9 * 60 * 60 * 1000);
+    } else {
+      const now = new Date();
+      targetDate = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+    }
+    
+    const dayCode = ((targetDate.getDay() + 6) % 7) + 1; // 월=1..일=7
     
     const courseQuery = normalizePlaceholder(process.env.SELECT_STUDENT_COURSE_BY_DAY_SQL);
     

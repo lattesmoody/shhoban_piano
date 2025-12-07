@@ -47,7 +47,10 @@ export async function processEntrance(studentId: string): Promise<string> {
     if (!student) return '등록된 수강생이 아닙니다.';
 
     // 2) 요일별 과정 조회
-    const dayCode = ((new Date().getDay() + 6) % 7) + 1; // 월=1..일=7
+    // KST 기준으로 요일 계산 (UTC + 9시간)
+    const kstDate = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
+    const dayCode = ((kstDate.getDay() + 6) % 7) + 1; // 월=1..일=7
+    
     const selCourseSql = normalizePlaceholderForEnv(process.env.SELECT_STUDENT_COURSE_BY_DAY_SQL);
     if (!selCourseSql) {
       throw new Error('SELECT_STUDENT_COURSE_BY_DAY_SQL 환경변수가 설정되지 않았습니다.');
