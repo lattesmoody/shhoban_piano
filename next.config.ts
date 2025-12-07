@@ -6,11 +6,12 @@
 import type { NextConfig } from 'next';
 
 const config: NextConfig = {
-  // 'experimental' 대신 'devServer'를 사용
-  devServer: {
-    allowedDevOrigins: process.env.ALLOWED_DEV_ORIGIN
-      ? [process.env.ALLOWED_DEV_ORIGIN]
-      : [],
+  experimental: {
+    serverActions: {
+      allowedOrigins: process.env.ALLOWED_DEV_ORIGIN
+        ? [process.env.ALLOWED_DEV_ORIGIN]
+        : [],
+    },
   },
 };
 
