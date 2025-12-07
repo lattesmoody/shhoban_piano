@@ -167,6 +167,15 @@
   white-space: nowrap;
 }
 
+.remarkCellClickable {
+  cursor: pointer;
+}
+
+.remarkCellClickable:hover {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
 .drumClickable {
   color: red !important;
   font-weight: bold;
@@ -221,4 +230,112 @@
   vertical-align: middle;
 }
 
+/* 학년별 배경색 */
+.bgCompetition {
+  background-color: #F5DEB3 !important; /* 연갈색 (Wheat) */
+}
 
+.bgConcert {
+  background-color: #C8E6C9 !important; /* 연두색 (Light Green 100) */
+}
+
+.bgNewbie {
+  background-color: #B3E5FC !important; /* 하늘색 (Light Blue 100) */
+}
+
+.bgEtc {
+  background-color: #E1BEE7 !important; /* 연보라색 (Purple 100) */
+}
+
+/* 팝업 스타일 */
+.popupOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.popupContent {
+  background-color: white;
+  padding: 0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 400px;
+  animation: popupFadeIn 0.2s ease-out;
+}
+
+@keyframes popupFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.popupHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.popupTitle {
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin: 0;
+  color: #333;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #888;
+  line-height: 1;
+  padding: 0 0.5rem;
+}
+
+.closeButton:hover {
+  color: #333;
+}
+
+.popupBody {
+  padding: 1.5rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #444;
+  white-space: pre-wrap; /* 줄바꿈 유지 */
+}
+
+.popupFooter {
+  padding: 1rem;
+  border-top: 1px solid #eee;
+  text-align: right;
+}
+
+.okButton {
+  background-color: #ff6b6b;
+  color: white;
+  border: none;
+  padding: 0.5rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.okButton:hover {
+  background-color: #fa5252;
+}

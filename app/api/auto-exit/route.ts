@@ -92,7 +92,10 @@ async function handleTimeExpired(
   try {
     // 1. 학생 과정 정보 조회
     const now = new Date();
-    const dayCode = ((now.getDay() + 6) % 7) + 1; // 월=1..일=7
+    // KST 기준으로 요일 계산 (UTC + 9시간)
+    const kstDate = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+    const dayCode = ((kstDate.getDay() + 6) % 7) + 1; // 월=1..일=7
+    
     const courseQuery = normalizePlaceholder(process.env.SELECT_STUDENT_COURSE_BY_DAY_SQL);
     
     if (!courseQuery) return false;
@@ -212,20 +215,24 @@ async function moveToDrumRoom(sql: any, studentId: string, currentRoomNo: number
       ]);
       
       // 출석 기록에 드럼 세션 추가 (INSERT)
-      const insertAttendanceSql = normalizePlaceholder(process.env.INSERT_ATTENDANCE_SQL); // 필요 시
-      // 하지만 보통 입실 시 출석 기록을 생성함. 여기서는 생략하거나 추가 구현 필요.
-      // 기존 process-entrance 로직을 보면 입실 시 출석 기록을 생성함.
-      // 여기서는 방 이동이므로 새로운 세션(드럼)을 생성해야 함.
-      
+      const insertAttendanceSql = normalizePlaceholder(process.env.INSERT_ATTENDANCE_SQL);
       if (insertAttendanceSql) {
-        await sql.query(insertAttendanceSql, [
-          studentId,
-          student.student_name,
-          toKSTISOString(drumInTime),
-          toKSTISOString(drumOutTime),
-          `드럼실 ${drumRoom.room_no}번`,
-          '드럼' // course_name (간소화)
-        ]);
+        const attendanceDate = toKSTISOString(drumInTime).slice(0, 10);
+        try {
+          await sql.query(insertAttendanceSql, [
+            attendanceDate,         // 1. attendance_date
+            studentId,              // 2. student_id
+            student.student_name,   // 3. student_name
+            student.student_grade,  // 4. student_grade
+            '드럼',                  // 5. course_name (피아노+드럼 과정의 드럼 세션)
+            toKSTISOString(drumInTime), // 6. in_time
+            toKSTISOString(drumInTime), // 7. actual_in_time
+            toKSTISOString(drumOutTime),// 8. out_time
+            `드럼실 ${drumRoom.room_no}번` // 9. remark
+          ]);
+        } catch (e) {
+          console.error('드럼실 출석 기록 생성 실패:', e);
+        }
       }
       
       console.log(`🥁 피아노(${currentRoomNo}) -> 드럼(${drumRoom.room_no}) 이동: ${student.student_name}`);
@@ -309,14 +316,24 @@ async function moveToTheoryRoom(sql: any, studentId: string, currentRoomNo: numb
       // 출석 기록 추가 (이론)
       const insertAttendanceSql = normalizePlaceholder(process.env.INSERT_ATTENDANCE_SQL);
       if (insertAttendanceSql) {
-        await sql.query(insertAttendanceSql, [
-          studentId,
-          student.student_name,
-          toKSTISOString(theoryInTime),
-          toKSTISOString(theoryOutTime),
-          `이론실 ${theoryRoom.room_no}번`,
-          '피아노+이론' // course_name
-        ]);
+        const attendanceDate = toKSTISOString(theoryInTime).slice(0, 10);
+        try {
+          await sql.query(insertAttendanceSql, [
+            attendanceDate,         // 1. attendance_date
+            studentId,              // 2. student_id
+            student.student_name,   // 3. student_name
+            student.student_grade,  // 4. student_grade
+            '피아노+이론',           // 5. course_name
+            toKSTISOString(theoryInTime), // 6. in_time
+            toKSTISOString(theoryInTime), // 7. actual_in_time
+            toKSTISOString(theoryOutTime),// 8. out_time
+            `이론실 ${theoryRoom.room_no}번` // 9. remark
+          ]);
+        } catch (e) {
+          console.error('이론실 출석 기록 생성 실패:', e);
+          // 출석 기록 생성 실패해도 이동은 성공한 것으로 처리할지 여부 결정
+          // 여기서는 에러 로그만 남기고 진행
+        }
       }
       
       console.log(`📚 피아노(${currentRoomNo}) -> 이론(${theoryRoom.room_no}) 이동: ${student.student_name}`);

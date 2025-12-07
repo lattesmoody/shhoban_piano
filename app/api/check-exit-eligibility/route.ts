@@ -86,7 +86,8 @@ export async function POST(request: NextRequest) {
       const today = new Date();
       const kstOffset = 9 * 60 * 60 * 1000;
       const kstTime = new Date(today.getTime() + kstOffset);
-      const dayCode = kstTime.getDay();
+      // 요일 코드 변환 (월=1, ... 일=7)
+      const dayCode = ((kstTime.getDay() + 6) % 7) + 1;
       
       const courseQueryRaw = process.env.SELECT_STUDENT_COURSE_BY_DAY_SQL;
       const courseQuery = normalizePlaceholders(courseQueryRaw);

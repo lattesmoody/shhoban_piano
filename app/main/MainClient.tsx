@@ -612,16 +612,47 @@ function WaitingList({
     return `${diffMinutes}분`;
   };
 
-  // 강사별 색상 매핑
+  // 강사별 색상 매핑 (배경색)
   const getInstructorColor = (memberId: string): string => {
     const colors: { [key: string]: string } = {
       '1': 'bg-orange-500', // 1번 강사 - 주황색
       '2': 'bg-blue-500',   // 2번 강사 - 파랑색
       '3': 'bg-green-500',  // 3번 강사 - 초록색
       '99': 'bg-gray-500',  // 관리자 - 회색
-      '0': 'bg-purple-500'  // 원장 - 보라색
+      '0': 'bg-purple-500', // 원장 - 보라색
+      'hm01': 'bg-orange-500',
+      'hm02': 'bg-blue-500',
+      'hm03': 'bg-green-500',
     };
     return colors[memberId] || 'bg-gray-400';
+  };
+
+  // 강사별 텍스트 색상 매핑
+  const getInstructorTextColor = (memberId: string): string => {
+    const colors: { [key: string]: string } = {
+      '1': 'text-orange-500', // 1번 강사 - 주황색
+      '2': 'text-blue-500',   // 2번 강사 - 파랑색
+      '3': 'text-green-500',  // 3번 강사 - 초록색
+      '99': 'text-gray-500',  // 관리자 - 회색
+      '0': 'text-purple-500', // 원장 - 보라색
+      'hm01': 'text-orange-500',
+      'hm02': 'text-blue-500',
+      'hm03': 'text-green-500',
+    };
+    return colors[memberId] || 'text-gray-400';
+  };
+
+  // 강사별 모양 매핑
+  const getInstructorShape = (memberId: string): string => {
+    switch (memberId) {
+      case '1': return '■';
+      case '2': return '★';
+      case '3': return '●';
+      case 'hm01': return '■';
+      case 'hm02': return '★';
+      case 'hm03': return '●';
+      default: return '●';
+    }
   };
 
   // 방 배정 예상 계산
@@ -731,16 +762,21 @@ function WaitingList({
             
             if (item) {
               // 방 배정 예상 정보 가져오기
-              // 이론실 학생(queue_id가 theory_로 시작)은 항상 첫 번째 빈 방을 배정받음
               const isTheoryStudent = String(item.queue_id).startsWith('theory_');
               const assignmentIndex = isTheoryStudent ? 0 : (item.queue_number - 1);
               const assignment = roomAssignments[assignmentIndex];
               
+              // 대기 학생 본인의 담당 강사 정보 가져오기
+              const studentInfo = studentCourseInfos.find(info => info.student_id === item.student_id);
+              const instructorId = studentInfo?.member_id || '';
+              
               return (
                 <li key={item.queue_id} className="flex items-center justify-between px-1 border-b border-gray-200 h-[1.15rem]">
                   <div className="flex items-center flex-1">
-                    {/* 강사 표시 (색상 원) */}
-                    <div className={`w-2.5 h-2.5 rounded-full mr-1 ${assignment ? assignment.instructorColor : 'bg-gray-300'}`}></div>
+                    {/* 강사 표시 (모양 및 색상) */}
+                    <span className={`mr-1 text-xs leading-none ${getInstructorTextColor(instructorId)}`}>
+                      {getInstructorShape(instructorId)}
+                    </span>
                     
                     {/* 수강생 이름 */}
                     <span className="text-xs text-gray-900 mr-1 flex-1 truncate leading-none">{item.student_name}</span>
@@ -824,7 +860,7 @@ function WaitingList({
                 <li key={`empty-${index}`} className="flex items-center px-1 border-b border-gray-200 h-[1.15rem]">
                   <div className="flex items-center flex-1">
                     {/* 빈 강사 표시 */}
-                    <div className="w-2.5 h-2.5 rounded-full mr-1 bg-gray-200"></div>
+                    <span className="mr-1 text-xs leading-none text-gray-200">●</span>
                     
                     {/* 빈 수강생 이름 */}
                     <span className="text-xs text-gray-400 mr-1 flex-1 leading-none">-</span>

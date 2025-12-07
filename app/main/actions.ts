@@ -15,14 +15,17 @@ export async function logoutAction() {
   redirect('/');
 }
 
-// KST 시간을 ISO 문자열로 변환 (UTC 변환 없이)
+// KST 시간을 ISO 문자열로 변환
 function toKSTISOString(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
+  // UTC 시간에 9시간(KST 오프셋)을 더함
+  const kstDate = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+  
+  const year = kstDate.getUTCFullYear();
+  const month = String(kstDate.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(kstDate.getUTCDate()).padStart(2, '0');
+  const hours = String(kstDate.getUTCHours()).padStart(2, '0');
+  const minutes = String(kstDate.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(kstDate.getUTCSeconds()).padStart(2, '0');
   
   return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+09:00`;
 }
@@ -435,17 +438,17 @@ export async function processEntrance(studentId: string): Promise<string> {
       
       if (hasPianoCompleted) {
         // 피아노 완료 → 이론실로
-        findEmptySqlRaw = process.env.THEORY_FIND_EMPTY_ROOM_SQL;
+        findEmptySqlRaw = `SELECT * FROM theory_room_status WHERE student_id IS NULL AND is_enabled = true ORDER BY room_no ASC LIMIT 1`;
         roomType = 'theory';
         //console.log('방 배정 결정: 이론실 (피아노 완료, 이론 수업)');
       } else {
         // 피아노 미완료 → 연습실/유치부실로
         if (isKindergarten) {
-          findEmptySqlRaw = process.env.KINDER_FIND_EMPTY_ROOM_SQL;
+          findEmptySqlRaw = `SELECT * FROM kinder_room_status WHERE student_id IS NULL AND is_enabled = true ORDER BY room_no ASC LIMIT 1`;
           roomType = 'kinder';
           //console.log('방 배정 결정: 유치부실 (피아노 미완료)');
         } else {
-          findEmptySqlRaw = process.env.PRACTICE_FIND_EMPTY_ROOM_SQL;
+          findEmptySqlRaw = `SELECT * FROM practice_room_status WHERE student_id IS NULL AND is_enabled = true ORDER BY room_no ASC LIMIT 1`;
           roomType = 'practice';
           //console.log('방 배정 결정: 연습실 (피아노 미완료)');
         }
@@ -515,78 +518,65 @@ export async function processEntrance(studentId: string): Promise<string> {
       if (hasDrumCompleted) {
         // 드럼 완료 → 피아노 연습실/유치부실로
         if (isKindergarten) {
-          findEmptySqlRaw = process.env.KINDER_FIND_EMPTY_ROOM_SQL;
+          findEmptySqlRaw = `SELECT * FROM kinder_room_status WHERE student_id IS NULL AND is_enabled = true ORDER BY room_no ASC LIMIT 1`;
           roomType = 'kinder';
           //console.log('방 배정 결정: 유치부실 (드럼 완료, 피아노 수업)');
         } else {
-          findEmptySqlRaw = process.env.PRACTICE_FIND_EMPTY_ROOM_SQL;
+          findEmptySqlRaw = `SELECT * FROM practice_room_status WHERE student_id IS NULL AND is_enabled = true ORDER BY room_no ASC LIMIT 1`;
           roomType = 'practice';
           //console.log('방 배정 결정: 연습실 (드럼 완료, 피아노 수업)');
         }
       } else {
         // 드럼 미완료 → 연습실/유치부실 먼저 확인
         if (isKindergarten) {
-          // 유치부 학생: 유치부실 확인
-          const kinderCheckSql = normalizePlaceholderForEnv(process.env.KINDER_FIND_EMPTY_ROOM_SQL);
-          if (kinderCheckSql) {
-            const kinderRoomRes: any = await (sql as any).query(kinderCheckSql);
-            const kinderRoom = Array.isArray(kinderRoomRes) ? kinderRoomRes[0] : (kinderRoomRes?.rows?.[0] ?? null);
-            
-            if (kinderRoom) {
-              // 유치부실 있음 → 피아노부터
-              findEmptySqlRaw = process.env.KINDER_FIND_EMPTY_ROOM_SQL;
-              roomType = 'kinder';
-              //console.log('방 배정 결정: 유치부실 (피아노 먼저)');
-            } else {
-              // 유치부실 없음 → 드럼실로
-              findEmptySqlRaw = process.env.DRUM_FIND_EMPTY_ROOM_SQL;
-              roomType = 'drum';
-              //console.log('방 배정 결정: 드럼실 (유치부실 만실)');
-            }
+          // 유치부 학생: 유치부실 확인 (활성화된 빈 방만)
+          const kinderCheckSql = `SELECT * FROM kinder_room_status WHERE student_id IS NULL AND is_enabled = true ORDER BY room_no ASC LIMIT 1`;
+          const kinderRoomRes: any = await (sql as any).query(kinderCheckSql);
+          const kinderRoom = Array.isArray(kinderRoomRes) ? kinderRoomRes[0] : (kinderRoomRes?.rows?.[0] ?? null);
+          
+          if (kinderRoom) {
+            // 유치부실 있음 → 피아노부터
+            findEmptySqlRaw = kinderCheckSql;
+            roomType = 'kinder';
+            //console.log('방 배정 결정: 유치부실 (피아노 먼저)');
           } else {
-            // 쿼리 없으면 기본 드럼실
-            findEmptySqlRaw = process.env.DRUM_FIND_EMPTY_ROOM_SQL;
+            // 유치부실 없음 → 드럼실로 (활성화된 빈 방만)
+            findEmptySqlRaw = `SELECT * FROM drum_room_status WHERE student_id IS NULL AND is_enabled = true ORDER BY room_no ASC LIMIT 1`;
             roomType = 'drum';
+            //console.log('방 배정 결정: 드럼실 (유치부실 만실)');
           }
         } else {
-          // 일반 학생: 연습실 확인
-          const practiceCheckSql = normalizePlaceholderForEnv(process.env.PRACTICE_FIND_EMPTY_ROOM_SQL);
-          if (practiceCheckSql) {
-            const practiceRoomRes: any = await (sql as any).query(practiceCheckSql);
-            const practiceRoom = Array.isArray(practiceRoomRes) ? practiceRoomRes[0] : (practiceRoomRes?.rows?.[0] ?? null);
-            
-            if (practiceRoom) {
-              // 연습실 있음 → 피아노부터
-              findEmptySqlRaw = process.env.PRACTICE_FIND_EMPTY_ROOM_SQL;
-              roomType = 'practice';
-              //console.log('방 배정 결정: 연습실 (피아노 먼저)');
-            } else {
-              // 연습실 없음 → 드럼실로
-              findEmptySqlRaw = process.env.DRUM_FIND_EMPTY_ROOM_SQL;
-              roomType = 'drum';
-              //console.log('방 배정 결정: 드럼실 (연습실 만실)');
-            }
+          // 일반 학생: 연습실 확인 (활성화된 빈 방만)
+          const practiceCheckSql = `SELECT * FROM practice_room_status WHERE student_id IS NULL AND is_enabled = true ORDER BY room_no ASC LIMIT 1`;
+          const practiceRoomRes: any = await (sql as any).query(practiceCheckSql);
+          const practiceRoom = Array.isArray(practiceRoomRes) ? practiceRoomRes[0] : (practiceRoomRes?.rows?.[0] ?? null);
+          
+          if (practiceRoom) {
+            // 연습실 있음 → 피아노부터
+            findEmptySqlRaw = practiceCheckSql;
+            roomType = 'practice';
+            //console.log('방 배정 결정: 연습실 (피아노 먼저)');
           } else {
-            // 쿼리 없으면 기본 드럼실
-            findEmptySqlRaw = process.env.DRUM_FIND_EMPTY_ROOM_SQL;
+            // 연습실 없음 → 드럼실로 (활성화된 빈 방만)
+            findEmptySqlRaw = `SELECT * FROM drum_room_status WHERE student_id IS NULL AND is_enabled = true ORDER BY room_no ASC LIMIT 1`;
             roomType = 'drum';
+            //console.log('방 배정 결정: 드럼실 (연습실 만실)');
           }
         }
       }
     } else if (isDrum) {
-      // 드럼 수업 → 드럼실 (유치부든 아니든 드럼 과정이면 드럼실)
-      findEmptySqlRaw = process.env.DRUM_FIND_EMPTY_ROOM_SQL;
+      // 드럼 수업 → 드럼실
+      findEmptySqlRaw = `SELECT * FROM drum_room_status WHERE student_id IS NULL AND is_enabled = true ORDER BY room_no ASC LIMIT 1`;
       roomType = 'drum';
       //console.log('방 배정 결정: 드럼실 (드럼 과정)');
     } else if (isKindergarten) {
       // 유치부 학생의 피아노 관련 과정 → 유치부실
-      // (피아노+이론, 피아노+드럼, 피아노)
-      findEmptySqlRaw = process.env.KINDER_FIND_EMPTY_ROOM_SQL;
+      findEmptySqlRaw = `SELECT * FROM kinder_room_status WHERE student_id IS NULL AND is_enabled = true ORDER BY room_no ASC LIMIT 1`;
       roomType = 'kinder';
       //console.log('방 배정 결정: 유치부실 (유치부 + 피아노 관련 과정)');
     } else {
-      // 그 외 → 연습실 (일반 학생의 피아노+이론, 피아노+드럼, 피아노)
-      findEmptySqlRaw = process.env.PRACTICE_FIND_EMPTY_ROOM_SQL;
+      // 그 외 → 연습실
+      findEmptySqlRaw = `SELECT * FROM practice_room_status WHERE student_id IS NULL AND is_enabled = true ORDER BY room_no ASC LIMIT 1`;
       roomType = 'practice';
       //console.log('방 배정 결정: 연습실 (일반 학생 + 피아노 관련 과정)');
     }
@@ -702,6 +692,11 @@ export async function processEntrance(studentId: string): Promise<string> {
       const lessonNameMap: Record<number,string> = {1:'피아노+이론',2:'피아노+드럼',3:'드럼',4:'피아노',5:'연습만'};
       const lessonName = lessonNameMap[lessonCode] || '수업';
       
+      // remark에 방 타입 명시 (이론실/드럼실 구분을 위해)
+      let remarkPrefix = '';
+      if (roomType === 'theory') remarkPrefix = '이론실 ';
+      else if (roomType === 'drum') remarkPrefix = '드럼실 ';
+      
       const attendanceData = {
         attendance_date: toKSTISOString(normalizedInTime).slice(0, 10), // YYYY-MM-DD 형식
         student_id: studentId,
@@ -712,7 +707,7 @@ export async function processEntrance(studentId: string): Promise<string> {
         actual_in_time: toKSTISOString(normalizedInTime), // 실제 입실 시간 (KST)
         out_time: toKSTISOString(calculatedOutTime),
         actual_out_time: null, // 입실 시에는 null, 퇴실 시에 실제 시간 기록
-        remark: `${room.room_no}번 방`
+        remark: `${remarkPrefix}${room.room_no}번`
       };
       
       //console.log('📋 출석 데이터:', JSON.stringify(attendanceData, null, 2));

@@ -144,15 +144,14 @@ export async function POST(request: NextRequest) {
     // 3-2. actual_out_time 업데이트 (실제 퇴실 시간)
     try {
       // student_attendance 테이블에 actual_out_time 업데이트
+      // in_time을 KST(UTC+9)로 변환하여 날짜 비교
       const updateActualOutTimeSql = `
         UPDATE student_attendance 
         SET actual_out_time = $1 
         WHERE student_id = $2 
-          AND DATE(in_time) = $3 
+          AND to_char(in_time + interval '9 hours', 'YYYY-MM-DD') = $3 
           AND out_time IS NOT NULL 
           AND actual_out_time IS NULL
-        ORDER BY in_time DESC 
-        LIMIT 1
       `;
       
       const result = await sql.query(updateActualOutTimeSql, [actualOutTime, studentId, today]);

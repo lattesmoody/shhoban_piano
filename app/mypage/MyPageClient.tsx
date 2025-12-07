@@ -45,6 +45,23 @@ export default function MyPageClient({ studentsData, members }: Props) {
   const router = useRouter();
   const [currentTime, setCurrentTime] = useState('');
   
+  // 비고 팝업 상태
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [popupContent, setPopupContent] = useState('');
+
+  // 비고 팝업 열기
+  const openPopup = (content: string | null) => {
+    if (!content || content === '-') return;
+    setPopupContent(content);
+    setIsPopupOpen(true);
+  };
+
+  // 비고 팝업 닫기
+  const closePopup = () => {
+    setIsPopupOpen(false);
+    setPopupContent('');
+  };
+  
   // 드럼 상태 업데이트 핸들러
   const handleDrumStatusClick = async (
     attendance_num: number,
@@ -95,7 +112,7 @@ export default function MyPageClient({ studentsData, members }: Props) {
       switch (memberId) {
         case 'hm01': return '□'; // 정영롱
         case 'hm02': return '☆'; // 전상은
-        case 'hm03': return '○'; // 강시1
+        case 'hm03': return '○'; // 강사1
         default: return '□';
       }
     }
@@ -174,47 +191,21 @@ export default function MyPageClient({ studentsData, members }: Props) {
     return () => clearInterval(refreshInterval);
   }, [router]);
   
-  // 분침을 5분 단위로 정규화하여 표시
+  // 분침을 5분 단위로 정규화하여 표시 (시계 방향 1~12)
   const formatNormalizedMinutes = (timeString: string | null): string => {
     if (!timeString) return '-';
     try {
       const date = new Date(timeString);
       const minute = date.getMinutes();
       
-      // 5분 단위로 정규화
-      let normalizedMinute;
-      if (minute >= 0 && minute <= 2) {
-        normalizedMinute = 0;
-      } else if (minute >= 3 && minute <= 7) {
-        normalizedMinute = 5;
-      } else if (minute >= 8 && minute <= 12) {
-        normalizedMinute = 10;
-      } else if (minute >= 13 && minute <= 17) {
-        normalizedMinute = 15;
-      } else if (minute >= 18 && minute <= 22) {
-        normalizedMinute = 20;
-      } else if (minute >= 23 && minute <= 27) {
-        normalizedMinute = 25;
-      } else if (minute >= 28 && minute <= 32) {
-        normalizedMinute = 30;
-      } else if (minute >= 33 && minute <= 37) {
-        normalizedMinute = 35;
-      } else if (minute >= 38 && minute <= 42) {
-        normalizedMinute = 40;
-      } else if (minute >= 43 && minute <= 47) {
-        normalizedMinute = 45;
-      } else if (minute >= 48 && minute <= 52) {
-        normalizedMinute = 50;
-      } else if (minute >= 53 && minute <= 57) {
-        normalizedMinute = 55;
-      } else if (minute >= 58 && minute <= 59) {
-        // 다음 시간 00분으로 간주
-        normalizedMinute = 0;
-      } else {
-        normalizedMinute = 0;
-      }
+      // 0분 또는 56분 이상은 12로 표시
+      if (minute === 0 || minute >= 56) return '12';
       
-      return String(normalizedMinute);
+      // 그 외는 5분 단위로 나눈 몫 (올림)
+      // 예: 5분->1, 10분->2, ..., 55분->11
+      // 1~4분 -> 1
+      const idx = Math.ceil(minute / 5);
+      return String(idx);
     } catch {
       return '-';
     }
@@ -245,6 +236,17 @@ export default function MyPageClient({ studentsData, members }: Props) {
       case 6: return '신입생';
       case 7: return '기타';
       default: return '-';
+    }
+  };
+
+  // 학년별 배경색 클래스 반환
+  const getGradeColorClass = (grade: number | null): string => {
+    switch (Number(grade)) {
+      case 4: return styles.bgCompetition; // 대회부 - 연갈색
+      case 5: return styles.bgConcert;     // 연주회부 - 연두색
+      case 6: return styles.bgNewbie;      // 신입생 - 하늘색
+      case 7: return styles.bgEtc;         // 기타 - 연보라색
+      default: return '';
     }
   };
   
@@ -394,7 +396,7 @@ export default function MyPageClient({ studentsData, members }: Props) {
                         key={student.student_id}
                       >
                           <td>{roomNumber}</td>
-                        <td className={styles.nameCell}>
+                        <td className={`${styles.nameCell} ${getGradeColorClass(student.student_grade)}`}>
                             {student.student_name}
                         </td>
                         <td className={isReEntry ? styles.reEnter : ''}>{formatTime(latestSession?.in_time)}</td>
@@ -471,12 +473,30 @@ export default function MyPageClient({ studentsData, members }: Props) {
                             {student.vehicle_yn ? getVehicleIcon(latestSession.vehicle_status) : ''}
                           </td>
                           
-                          <td className={styles.remarkCell}>
+                          <td 
+                            className={`${styles.remarkCell} ${student.special_notes ? styles.remarkCellClickable : ''}`}
+                            onClick={() => openPopup(student.special_notes)}
+                          >
                             {student.special_notes || '-'}
                         </td>
                       </tr>
                     );
                   })}
+                  {/* 빈 행 렌더링 (격자 유지, 최소 25줄) */}
+                  {Array.from({ length: Math.max(0, 25 - columnData.length) }).map((_, index) => (
+                    <tr key={`empty-${index}`}>
+                      <td>{'\u00A0'}</td>
+                      <td>{'\u00A0'}</td>
+                      <td>{'\u00A0'}</td>
+                      <td>{'\u00A0'}</td>
+                      <td>{'\u00A0'}</td>
+                      <td>{'\u00A0'}</td>
+                      <td>{'\u00A0'}</td>
+                      <td>{'\u00A0'}</td>
+                      <td>{'\u00A0'}</td>
+                      <td>{'\u00A0'}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -484,6 +504,24 @@ export default function MyPageClient({ studentsData, members }: Props) {
           })}
         </div>
       </main>
+      
+      {/* 비고 팝업 */}
+      {isPopupOpen && (
+        <div className={styles.popupOverlay} onClick={closePopup}>
+          <div className={styles.popupContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.popupHeader}>
+              <h3 className={styles.popupTitle}>비고 내용</h3>
+              <button className={styles.closeButton} onClick={closePopup}>&times;</button>
+            </div>
+            <div className={styles.popupBody}>
+              {popupContent}
+            </div>
+            <div className={styles.popupFooter}>
+              <button className={styles.okButton} onClick={closePopup}>확인</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
