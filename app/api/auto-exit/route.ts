@@ -125,14 +125,7 @@ async function handleTimeExpired(
 
 // 드럼실로 이동
 async function moveToDrumRoom(sql: any, studentId: string, currentRoomNo: number, currentRoomType: 'practice' | 'kinder'): Promise<boolean> {
-  // 드럼실 빈 방 찾기
-  const drumRoomQuery = normalizePlaceholder(process.env.DRUM_FIND_EMPTY_ROOM_SQL); // 환경변수명 확인 필요 (보통 FIND_EMPTY_ROOM_SQL 패턴)
-  // process-exit에는 DRUM_FIND_EMPTY_ROOM_SQL이 없음. 직접 쿼리 작성하거나 FIND_STUDENT_IN_DRUM_ROOMS_SQL 등을 참고.
-  // 하지만 process-exit에는 연습실->드럼실 이동 로직이 없었음 (반대는 있었음).
-  // 따라서 드럼실 빈 방 찾는 쿼리를 여기서는 직접 작성하는 게 안전하거나, 환경변수가 있다고 가정해야 함.
-  // 일단 하드코딩된 쿼리 사용 (안전)
-  
-  // 드럼실 상태 테이블 확인 (1~4번 방)
+  // 드럼실 빈 방 찾기 (활성화된 방만)
   const findEmptyDrumSql = `
     SELECT room_no FROM drum_room_status 
     WHERE student_id IS NULL AND is_enabled = true 
@@ -245,11 +238,14 @@ async function moveToDrumRoom(sql: any, studentId: string, currentRoomNo: number
 
 // 이론실로 이동
 async function moveToTheoryRoom(sql: any, studentId: string, currentRoomNo: number, currentRoomType: 'practice' | 'kinder'): Promise<boolean> {
-  // 이론실 빈 방 찾기
-  const theoryRoomQuery = normalizePlaceholder(process.env.THEORY_FIND_EMPTY_ROOM_SQL);
-  if (!theoryRoomQuery) return false;
+  // 이론실 빈 방 찾기 (활성화된 방만)
+  const findEmptyTheorySql = `
+    SELECT room_no FROM theory_room_status 
+    WHERE student_id IS NULL AND is_enabled = true 
+    ORDER BY room_no ASC LIMIT 1
+  `;
   
-  const theoryRoomResult: any = await sql.query(theoryRoomQuery);
+  const theoryRoomResult: any = await sql.query(findEmptyTheorySql);
   const theoryRoom = Array.isArray(theoryRoomResult) ? theoryRoomResult[0] : (theoryRoomResult?.rows?.[0] ?? null);
   
   if (theoryRoom) {

@@ -278,16 +278,17 @@ export default function MyPageClient({ studentsData, members }: Props) {
     return match ? match[0] : '-';
   };
   
-  // 과정 아이콘
-  const getCourseIcon = (courseName: string): string => {
-    if (courseName.includes('피아노+이론')) return '●';
+  // 과정 아이콘 (요구사항 반영)
+  const getCourseSymbol = (courseName: string): string => {
+    if (!courseName) return '';
     if (courseName.includes('피아노+드럼')) return '◆';
+    if (courseName.includes('피아노+이론')) return ''; // 없음
     if (courseName.includes('드럼')) return '■';
-    if (courseName.includes('피아노')) return '▲';
-    if (courseName.includes('연습만')) return '-';
-    return '●';
+    if (courseName.includes('피아노')) return '▲'; // 피아노+이론이 먼저 걸러지므로 순서 중요
+    if (courseName.includes('연습만')) return 'X';
+    return '';
   };
-  
+
   // 퇴실 시간 계산 (actual_out_time 우선, 없으면 빈 칸)
   const getExitTime = (session: Session): string => {
     if (session.actual_out_time) {
@@ -365,6 +366,7 @@ export default function MyPageClient({ studentsData, members }: Props) {
                 <thead>
                   <tr>
                     <th>연습<br/>번호</th>
+                    <th>과정</th>
                     <th>이름</th>
                     <th>등원<br/>시간</th>
                     <th>연습<br/>종료</th>
@@ -396,6 +398,7 @@ export default function MyPageClient({ studentsData, members }: Props) {
                         key={student.student_id}
                       >
                           <td>{roomNumber}</td>
+                          <td>{getCourseSymbol(latestSession?.course_name)}</td>
                         <td className={`${styles.nameCell} ${getGradeColorClass(student.student_grade)}`}>
                             {student.student_name}
                         </td>
@@ -485,6 +488,7 @@ export default function MyPageClient({ studentsData, members }: Props) {
                   {/* 빈 행 렌더링 (격자 유지, 최소 25줄) */}
                   {Array.from({ length: Math.max(0, 25 - columnData.length) }).map((_, index) => (
                     <tr key={`empty-${index}`}>
+                      <td>{'\u00A0'}</td>
                       <td>{'\u00A0'}</td>
                       <td>{'\u00A0'}</td>
                       <td>{'\u00A0'}</td>
